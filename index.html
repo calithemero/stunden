@@ -17,9 +17,9 @@ try{ if(localStorage.getItem('stundenbewertung-ansicht')==='dunkel'){ document.d
 <meta name="apple-mobile-web-app-title" content="Stunden">
 <style>
 /* Aufbau: Kopf, Monatsleiste (klebt), darunter ein Bereich nach Wahl.
-   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand: Monat (Dienste eintragen), Auswertung (Ergebnis, Soll und Ist, Zum Nachrechnen), Jahr, Einstellungen.
+   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand: Monat (Dienste eintragen), Auswertung (Ergebnis, Soll und Ist, Zuschlagsstunden, Zum Nachrechnen), Jahr, Einstellungen.
    Der Saldo steht dabei immer in der Monatsleiste und führt per Antippen zur Auswertung.
-   Ab 1040 px Breite: drei Bereiche oben in der Monatsleiste; „Monat“ zeigt Eingabe und Auswertung nebeneinander.
+   Ab 1040 px Breite: drei Bereiche oben in der Monatsleiste; „Monat“ zeigt Eingabe und Auswertung nebeneinander, darunter über die ganze Breite Zuschlagsstunden und Zum Nachrechnen.
    Alle Bereiche stehen immer im Dokument und werden gemeinsam berechnet, die Auswahl blendet nur ein und aus.
    Darstellung: hell ist der Standard, dunkel wählbar (Einstellungen), gemerkt je Gerät.
    Farbe steht nur für Bedeutung: Diensttypen, Plus/Minus, Warnungen. Alles andere bleibt neutral. */
@@ -273,6 +273,20 @@ table.res tr.hdr td:nth-child(2){background:none}
 #resLines{display:grid;gap:6px;margin-top:10px}
 #resLines p{font-size:13px}
 
+/* Zuschlagsstunden: Stunden je Zuschlagsart aus den 24-h-Diensten, zum Vergleich mit dem Lohnzettel */
+.zus .lead{margin:4px 0 0;max-width:70ch}
+.zgrid{display:grid;grid-template-columns:minmax(0,1fr)}
+dl.zu{margin:8px 0 0}
+dl.zu>div{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:10px 2px;border-bottom:1px solid var(--line)}
+dl.zu dt{font-weight:600;min-width:0}
+dl.zu .zs{display:block;font-size:13px;line-height:1.4;font-weight:400;color:var(--muted)}
+dl.zu dd{margin:0;flex:none;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+dl.zu .null dd{font-weight:400;color:var(--muted)}
+#zuPay{margin:12px 0 0;font-size:13.5px;max-width:70ch}
+.zus .calc{margin-top:12px}
+#zuLines{display:grid;gap:6px}
+#zuLines p{font-size:13px}
+
 /* Zum Nachrechnen */
 .split{display:grid;grid-template-columns:minmax(0,1fr);margin-top:6px}
 .split>details+details{border-top:1px solid var(--line)}
@@ -359,7 +373,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   body[data-view="einstellungen"] .work,body[data-view="einstellungen"] .year,body[data-view="einstellungen"] .tnote{display:none}
 }
 @media screen and (max-width:1039px){
-  body[data-view="monat"] .over,body[data-view="monat"] .detail,body[data-view="monat"] .proof,
+  body[data-view="monat"] .over,body[data-view="monat"] .detail,body[data-view="monat"] .zus,body[data-view="monat"] .proof,
   body[data-view="auswertung"] .entry{display:none}
 }
 @media print{ body .tabbar,body .toptabs{display:none} body .bar{position:static} }
@@ -378,11 +392,14 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .ttab:active{background:var(--line)}
   .bar .chip .go{display:none} /* breite Fenster: die Auswertung steht schon neben der Eingabe */
   .prefs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
-  .work{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto 1fr auto}
+  .work{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto 1fr auto auto}
   .entry{grid-column:1;grid-row:1/span 2}
   .over{grid-column:2;grid-row:1}
   .detail{grid-column:2;grid-row:2}
-  .proof{grid-column:1/-1;grid-row:3}
+  .zus{grid-column:1/-1;grid-row:3}
+  .zgrid{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);column-gap:28px;align-items:start}
+  .zus .calc{margin-top:8px;border-top:0}
+  .proof{grid-column:1/-1;grid-row:4}
   .split{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);column-gap:28px}
   .how{font-size:12px}
   .split>details+details{border-top:0}
@@ -405,7 +422,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .logo{width:28px;height:28px}
   .top h1{font-size:17px}
   .top h1+.sub{display:none} /* am Handy schlanker Kopf wie in einer App; die Erklärung steht bei „Dienste eintragen“ */
-  .entry h2 .when,#aufTitle .mo{display:none} /* der Monat steht direkt darüber in der Leiste */
+  .entry h2 .when,.zus h2 .when,#aufTitle .mo{display:none} /* der Monat steht direkt darüber in der Leiste */
   #todayLink{top:8px;right:12px}
   .bar .chip .long{display:inline;position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap} /* zu sehen ist die Kurzform, vorgelesen wird „Saldo bewertet“ */
   table.auf tr.sum .sub{display:none}
@@ -635,6 +652,21 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
       </details>
     </section>
 
+    <section class="card zus" aria-label="Zuschlagsstunden">
+      <h2>Zuschlagsstunden <span class="when" id="zuMonth"></span></h2>
+      <p class="sub lead" id="zuLead"></p>
+      <div class="zgrid">
+        <div>
+          <dl class="zu" id="zuList"></dl>
+          <p class="sub" id="zuPay"></p>
+        </div>
+        <details class="dt calc" id="dZu">
+          <summary>So wird gezählt</summary>
+          <div id="zuLines"></div>
+        </details>
+      </div>
+    </section>
+
     <section class="card proof" aria-label="Zum Nachrechnen">
       <div class="chead">
         <h2>Zum Nachrechnen</h2>
@@ -742,7 +774,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 </main>
 
 <script>
-const APP_VERSION='2.6 · Stand 17.11.2026';
+const APP_VERSION='2.7 · Stand 17.11.2026';
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 // Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
 const TYPES=[
@@ -836,7 +868,7 @@ function init(){
   wireBar();
   wireEntry();
   const phone=matchMedia('(max-width:480px)').matches;
-  $('dHow').open=!phone; $('dAuf').open=true; $('dCalc').open=!phone;
+  $('dHow').open=!phone; $('dAuf').open=true; $('dCalc').open=!phone; $('dZu').open=!phone;
   $('dSettings').open=false;
   if(navigator.share) $('share').hidden=false;
   ['year','month'].forEach(i=>$(i).addEventListener('change',()=>{ if(i==='year') syncW(); render(); }));
@@ -1295,6 +1327,10 @@ function render(){
   $('undoData').hidden=!(undo&&(undo.label==='Import'||undo.label==='Alles löschen'));
   renderUe(y,m,f);
 
+  // Zuschlagsstunden: eigene Karte in der Auswertung, eigener Abschnitt im Rechenweg
+  const zu=zuschlag(y,m);
+  renderZu(zu,y,m);
+
   // Jahr und Konto
   const yr=renderYear(y,m,W,VZ,f);
   $('tKontoK').textContent=`Konto ${y} bis ${mon(m)}`;
@@ -1306,10 +1342,92 @@ function render(){
   $('setNote').textContent=`24-h-Dienste, U, K statt Dienst und FA werden mit Vollzeit ÷ Höchstarbeitszeit bewertet, aktuell ${fmt(f*100,2)} %. FB und BR zählen 1:1, HD wird gesondert ausgewiesen. Die Minuten für Ü und BR stellst du beim Eintragen ein, direkt unter den Diensttypen.`;
   $('foot').textContent=`TV RD BAR § 6 Abs. 4 · Höchstarbeitszeit ${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · Feiertage Brandenburg, Soll ohne Feiertagsabzug · Version ${APP_VERSION}`;
 
-  last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD};
+  last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD,zu};
   syncLegend();
   $('how').textContent=buildText();
   save();
+}
+/* Zuschlagsstunden nach TV RD BAR § 8 Abs. 1, gezählt aus den 24-h-Diensten. Nur Stunden, keine Beträge.
+   Ein Dienst läuft von ZB Uhr bis ZB Uhr am Folgetag; für Zuschläge zählen alle 24 Stunden (§ 6 Abs. 4, Protokollerklärung Nr. 2).
+   Nacht: 20 bis 6 Uhr (§ 7 Abs. 5). Von Feiertag, 24.12./31.12. (ab 6 Uhr) und Sonntag zählt je Stunde nur der höchste Zuschlag (§ 8 Abs. 1 Satz 3):
+   Feiertag vor 24.12./31.12. vor Sonntag. Nacht kommt immer dazu.
+   Gezählt wird nach Kalendertag: Die Stunden nach Mitternacht gehören zum Folgetag, am Monatsende also zum nächsten Monat. */
+const ZB=7; // Dienstbeginn des 24-h-Dienstes (Uhr)
+function zuschlag(y,m){
+  const ov=(a,b,c,d)=>Math.max(0,Math.min(b,d)-Math.max(a,c)); // gemeinsame Stunden zweier Zeitspannen am selben Tag
+  const hol=holidays(y), sp=special(y);
+  const nacht=(a,b)=>ov(a,b,0,6)+ov(a,b,20,24);
+  const z={n:0,voll:0,nacht:0,so:0,ft:0,vf:0,nA:nacht(ZB,24),nB:nacht(0,ZB),tage:[],rein:null,raus:null,uhr:[]};
+  const dim=new Date(y,m+1,0).getDate(), by={};
+  const part=(dt,a,b)=>{ // die Stunden von a bis b Uhr am Kalendertag dt (liegt immer im gezeigten Monat)
+    const d=dt.getDate(), k=key(y,m,d), sun=dt.getDay()===0, hn=hol[k], vn=sp[k];
+    const e=by[d]||(by[d]={d,so:0,ft:0,vf:0,name:'',sun});
+    z.nacht+=nacht(a,b);
+    if(hn){ e.ft+=b-a; e.name=hn; }
+    else if(vn){ e.vf+=ov(a,b,6,24); e.name=vn; if(sun) e.so+=ov(a,b,0,6); }
+    else if(sun) e.so+=b-a;
+  };
+  for(let i=0;i<=dim;i++){ // i=0 ist der letzte Tag des Vormonats: Sein Dienst läuft in diesen Monat hinein
+    const d0=new Date(y,m,i), d1=new Date(y,m,i+1);
+    if(!(state.plan[key(d0.getFullYear(),d0.getMonth(),d0.getDate())]||[]).includes('t24')) continue;
+    if(i>0){ z.n++; part(d0,ZB,24); } else z.rein={d:d0.getDate(),m:d0.getMonth()};
+    if(i<dim){ part(d1,0,ZB); if(i>0) z.voll++; } else z.raus={d:dim};
+    // Nacht der Zeitumstellung (letzter Sonntag im März und im Oktober): Der Dienst ist dann 23 oder 25 Stunden lang, gerechnet wird trotzdem mit 24
+    if(i>0&&i<dim&&(m===2||m===9)&&d1.getDay()===0&&d1.getDate()+7>dim) z.uhr.push({d:i,so:d1.getDate(),vor:m===2});
+  }
+  z.tage=Object.values(by).filter(e=>e.so||e.ft||e.vf).sort((a,b)=>a.d-b.d);
+  for(const e of z.tage){ z.so+=e.so; z.ft+=e.ft; z.vf+=e.vf; }
+  z.any=z.n>0||!!z.rein;
+  return z;
+}
+function zuTexte(z,y,m){ // Wortlaut für die Karte (rows, pay, lines) und für den Rechenweg (how)
+  if(!z.any) return {lead:`Im ${MONATE[m]} ist kein 24-h-Dienst eingetragen. Die App zählt Zuschlagsstunden nur aus 24-h-Diensten.`,rows:[],pay:'',lines:[],how:['Zuschlagsstunden: kein 24-h-Dienst eingetragen']};
+  const h=x=>fmtW(x)+' h', nm=(m+1)%12, pay=new Date(y,m+2,1), payT=`${MONATE[pay.getMonth()]} ${pay.getFullYear()}`;
+  const so=z.tage.filter(e=>e.so), ft=z.tage.filter(e=>e.ft), vf=z.tage.filter(e=>e.vf);
+  const soT=so.map(e=>`${e.d}. (${h(e.so)})`).join(', '), ftT=ft.map(e=>`${e.name} am ${e.d}. (${h(e.ft)})`).join(', '), vfT=vf.map(e=>`${e.name} (${h(e.vf)})`).join(', ');
+  const sum=(n,x)=>n>1?`, zusammen ${h(x)}`:'';
+  const nf=[z.voll?`${z.voll} × ${h(z.nA+z.nB)}`:'',z.raus?h(z.nA):'',z.rein?h(z.nB):''].filter(Boolean).join(' + '); // Nachtstunden: ganze Dienste, dazu die Teile an den Monatsgrenzen
+  const rows=[['Nacht','20 bis 6 Uhr, 20 %',z.nacht],['Sonntag','0 bis 24 Uhr, 25 %',z.so],['Feiertag','0 bis 24 Uhr, 35 % mit und 135 % ohne Freizeitausgleich',z.ft]];
+  if(z.vf) rows.push(['24.12. und 31.12.','ab 6 Uhr, 35 %',z.vf]);
+  const L=[];
+  L.push(`Ein 24-h-Dienst läuft von ${ZB} Uhr bis ${ZB} Uhr am nächsten Tag. Für Zuschläge zählen alle 24 Stunden, nicht nur die bewerteten.`);
+  L.push(`Nacht ist von 20 bis 6 Uhr, das sind ${h(z.nA+z.nB)} je Dienst. In diesem Monat: ${nf}${nf===h(z.nacht)?'':' = '+h(z.nacht)}. Nachtstunden zählen immer zusätzlich, auch an Sonntagen und Feiertagen.`);
+  if(z.rein) L.push(`Der Dienst vom ${z.rein.d}.${z.rein.m+1}. lief bis zum 1.${m+1}. um ${ZB} Uhr. Diese ${h(ZB)} zählen im ${MONATE[m]}, davon ${h(z.nB)} Nacht.`);
+  if(z.raus) L.push(`Der Dienst am ${z.raus.d}.${m+1}. läuft bis zum 1.${nm+1}. um ${ZB} Uhr. Die ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}, im ${MONATE[m]} bleiben ${h(z.nA)} Nacht.`);
+  if(so.length||ft.length) L.push(`Sonntage und Feiertage zählen von 0 bis 24 Uhr: ${h(24-ZB)}, wenn der Dienst an dem Tag beginnt, und ${h(ZB)}, wenn er dort endet.`);
+  else L.push('In diesem Monat berührt kein Dienst einen Sonntag oder Feiertag.');
+  if(so.length) L.push(`Sonntag: ${soT}${sum(so.length,z.so)}.`);
+  if(ft.length) L.push(`Feiertag: ${ftT}${sum(ft.length,z.ft)}.`);
+  if(vf.length) L.push(`Am 24.12. und 31.12. gilt der Zuschlag erst ab 6 Uhr: ${vfT}${sum(vf.length,z.vf)}.`);
+  if(z.tage.some(e=>e.ft&&e.sun)) L.push('Fällt ein Feiertag auf einen Sonntag, zählt nur der Feiertag, weil sein Zuschlag höher ist.');
+  if(z.tage.some(e=>e.vf&&e.sun)) L.push('Fällt der 24.12. oder 31.12. auf einen Sonntag, zählt ab 6 Uhr nur der Zuschlag für diesen Tag, weil er höher ist.');
+  for(const u of z.uhr) L.push(`In der Nacht zum ${u.so}.${m+1}. wird die Uhr ${u.vor?'vorgestellt':'zurückgestellt'}. Der Dienst vom ${u.d}.${m+1}. ${u.vor?'ist deshalb eine Stunde kürzer':'dauert deshalb eine Stunde länger'}. Die App rechnet trotzdem mit 24 Stunden, der Lohnzettel kann um eine Stunde abweichen.`);
+  L.push('Nicht dabei: Überstunden, Fortbildung, Betriebsrat und Hintergrunddienst, weil die App dafür keine Uhrzeit kennt. Für Urlaub und Krank zahlt der Arbeitgeber den Durchschnitt der letzten drei vollen Monate (§ 21). Den Samstagszuschlag (13 bis 21 Uhr) gibt es laut TV nicht bei Wechselschicht- oder Schichtarbeit.');
+  L.push('Grundlage: TV RD BAR § 8 Abs. 1, § 7 Abs. 5 und § 6 Abs. 4 mit Protokollerklärung Nr. 2.');
+  const how=['Zuschlagsstunden (TV RD BAR § 8 Abs. 1)',`24-h-Dienst ${ZB}–${ZB} Uhr, alle 24 h zählen`];
+  how.push(`Nacht (20–6 Uhr): ${nf} = ${fmt(z.nacht)} h`);
+  how.push(`Sonntag:          ${so.length?soT+' = ':''}${fmt(z.so)} h`);
+  how.push(`Feiertag:         ${ft.length?ftT+' = ':''}${fmt(z.ft)} h`);
+  if(vf.length) how.push(`24.12./31.12. ab 6 Uhr: ${vfT} = ${fmt(z.vf)} h`);
+  if(z.rein) how.push(`Dienst vom ${z.rein.d}.${z.rein.m+1}.: ${h(ZB)} nach Mitternacht zählen hier`);
+  if(z.raus) how.push(`Dienst vom ${z.raus.d}.${m+1}.: ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}`);
+  for(const u of z.uhr) how.push(`Zeitumstellung am ${u.so}.${m+1}.: Dienst vom ${u.d}.${m+1}. eine Stunde ${u.vor?'kürzer':'länger'}, gerechnet mit 24 h`);
+  how.push('Je Stunde nur der höchste von Feiertag, 24.12./31.12., Sonntag');
+  how.push('Nacht zählt zusätzlich');
+  how.push(`Abrechnung laut § 24 Abs. 1: ${payT}`);
+  return {lead:'Stunden aus deinen 24-h-Diensten, für die es laut TV RD BAR einen Zuschlag gibt. Zum Vergleich mit dem Lohnzettel.',rows,
+    pay:`Laut TV werden Zuschläge zwei Monate später gezahlt (§ 24 Abs. 1). Die Stunden aus ${MONATE[m]} stehen dann auf der Abrechnung für ${payT}.`,lines:L,how};
+}
+function renderZu(z,y,m){
+  const t=zuTexte(z,y,m);
+  // geschütztes Leerzeichen, damit am Zeilenende nichts auseinanderfällt: Zahl und Einheit („17 h“, „35 %“, „7 Uhr“), Paragraf und Absatz („§ 24 Abs. 1“), „Nr. 2“
+  const nb=s=>s.replace(/(\d) (?=(?:h|Uhr)(?![a-zäöü])|%)/g,'$1\u00a0').replace(/§ (?=\d)/g,'§\u00a0').replace(/(\d) Abs\. (?=\d)/g,'$1\u00a0Abs.\u00a0').replace(/Nr\. (?=\d)/g,'Nr.\u00a0');
+  $('zuMonth').textContent=`${MONATE[m]} ${y}`;
+  $('zuLead').textContent=t.lead;
+  $('zuList').hidden=!z.any; $('zuPay').hidden=!z.any; $('dZu').hidden=!z.any;
+  $('zuList').innerHTML=t.rows.map(([n,s,v])=>`<div class="${v?'':'null'}"><dt>${n} <span class="zs">${nb(s)}</span></dt><dd>${fmt(v)} h</dd></div>`).join('');
+  $('zuPay').textContent=nb(t.pay);
+  $('zuLines').innerHTML=t.lines.map(s=>`<p class="sub">${esc(nb(s))}</p>`).join('');
 }
 function renderUe(y,m,f){
   const pre=`${y}-${pad(m+1)}-`;
@@ -1408,6 +1526,7 @@ function buildText(){
   lines.push(`Saldo voll:     ${sgn(L.istVoll-L.sollVoll)} h`);
   lines.push(`Saldo bewertet: ${sgn(L.saldo)} h`);
   lines.push(`→ ${L.nAny?verdict(L.saldo,m):'Noch nichts eingetragen.'}`);
+  lines.push('',...zuTexte(L.zu,L.y,m).how);
   return lines.join('\n');
 }
 /* App-Rahmen: Bereiche (Monat, Auswertung, Jahr, Einstellungen) und Darstellung (hell oder dunkel).
