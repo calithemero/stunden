@@ -17,7 +17,8 @@ try{ if(localStorage.getItem('stundenbewertung-ansicht')==='dunkel'){ document.d
 <meta name="apple-mobile-web-app-title" content="Stunden">
 <style>
 /* Aufbau: Kopf, Monatsleiste (klebt), darunter ein Bereich nach Wahl.
-   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand – Monat (Überblick, Dienste eintragen), Auswertung (Soll und Ist, Zum Nachrechnen), Jahr, Einstellungen.
+   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand: Monat (Dienste eintragen), Auswertung (Ergebnis, Soll und Ist, Zum Nachrechnen), Jahr, Einstellungen.
+   Der Saldo steht dabei immer in der Monatsleiste und führt per Antippen zur Auswertung.
    Ab 1040 px Breite: drei Bereiche oben in der Monatsleiste; „Monat“ zeigt Eingabe und Auswertung nebeneinander.
    Alle Bereiche stehen immer im Dokument und werden gemeinsam berechnet, die Auswahl blendet nur ein und aus.
    Darstellung: hell ist der Standard, dunkel wählbar (Einstellungen), gemerkt je Gerät.
@@ -81,9 +82,8 @@ button.act.link{border:0;background:none;text-decoration:underline;text-underlin
 button.act.link:active:not(:disabled){background:none;opacity:.7}
 
 /* Hinweise */
-.banner,.callout{border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink)}
+.banner{border:1px solid var(--warn-line);background:var(--warn-bg);border-radius:12px;padding:12px 14px;font-size:14px;color:var(--ink)}
 .banner.bad{border-color:var(--bad);background:var(--bad-bg)}
-.callout{font-size:13.5px;padding:10px 14px}
 
 /* Kopf und Monatsleiste */
 .top{background:var(--surface);padding:16px 0 4px}
@@ -102,8 +102,10 @@ button.act.link:active:not(:disabled){background:none;opacity:.7}
 .bar .title #barMonth{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar .caret{width:16px;height:16px;flex:none;color:var(--muted);transition:transform .15s}
 .bar .title[aria-expanded="true"] .caret{transform:rotate(180deg)}
-.bar .chip{flex:none;min-width:92px;margin-left:auto;text-align:right;line-height:1.2;padding-left:8px}
-.bar .chip .k{font-size:11.5px;color:var(--muted)}
+.bar .chip{flex:none;min-width:98px;height:44px;margin:0 -6px 0 auto;padding:0 6px 0 8px;border:0;border-radius:10px;background:none;color:inherit;font:inherit;line-height:1.2;text-align:right;cursor:pointer;touch-action:manipulation;display:flex;flex-direction:column;align-items:flex-end;justify-content:center}
+.bar .chip:active{background:var(--line)}
+.bar .chip .k{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:1px}
+.bar .chip .go{width:11px;height:11px;flex:none;margin-right:-3px}
 .bar .chip .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar .chip .v:empty::before{content:"–";color:var(--muted)}
 .toptabs{display:none}
@@ -146,6 +148,7 @@ main{display:flex;flex-direction:column;gap:16px;padding-top:16px;padding-bottom
 .tile .v{font-size:22px;line-height:1.2;font-weight:700;margin-top:2px;white-space:nowrap}
 .tile .n{font-size:12.5px;color:var(--k-muted);margin-top:2px}
 .tile .n.warn{color:var(--k-warn)}
+.acct .tile .v.offen{color:var(--k-muted)} /* solange Monate fehlen, ist das Konto unvollständig: Zahl ohne Signalfarbe, der Hinweis darunter erklärt es */
 .tile.hero .v{font-size:52px;line-height:1.05;letter-spacing:-.02em;margin-top:6px}
 .tile.hero .n{font-size:15px;color:var(--k-ink);margin-top:8px;max-width:38em}
 .tile.hero.pos .v{color:var(--k-good)} .tile.hero.neg .v{color:var(--k-bad)} .tile.hero.leer .v{color:var(--k-muted);font-weight:400}
@@ -163,7 +166,9 @@ main{display:flex;flex-direction:column;gap:16px;padding-top:16px;padding-bottom
 .mcap .markkey{width:2px;height:12px;border-radius:1px;background:var(--k-ink)}
 .tiles{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr);column-gap:16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--k-line)}
 .tiles .konto{border-left:1px solid var(--k-line);padding-left:16px}
-.acct #todayLink{display:block;width:100%;margin-top:14px;padding:10px 12px;border:1px solid rgba(255,255,255,.3);border-radius:10px;text-decoration:none;font-size:14px}
+.entry{position:relative}
+#todayLink{position:absolute;top:12px;right:16px;min-height:30px;padding:0 14px;border-radius:15px;font-size:13.5px;line-height:1}
+#todayLink::after{content:"";position:absolute;inset:-7px -6px} /* Tippfläche größer als die sichtbare Schaltfläche */
 
 /* Dienste eintragen */
 .entry{display:flex;flex-direction:column}
@@ -220,6 +225,7 @@ main{display:flex;flex-direction:column;gap:16px;padding-top:16px;padding-bottom
   .pick:hover,.bar .nav:hover:not(:disabled),.bar .title:hover,button.act:hover:not(:disabled):not(.primary):not(.link):not([data-sure]){background:var(--line)}
   .ttab:hover{background:var(--sunken);color:var(--ink)}
   .iclose:hover{background:var(--line);color:var(--ink)}
+  .bar .chip:hover{background:var(--sunken)}
   #lookSeg button[aria-pressed="false"]:hover{background:var(--line)}
   .pick[aria-pressed="true"]:hover{background:var(--pc,var(--muted))}
   .pick.eraser[aria-pressed="true"]:hover{background:var(--bad)}
@@ -261,6 +267,9 @@ table.res tr.sal td.voll{font-weight:600}
 table.res tr.hdr td{border-bottom:0;padding-top:14px;font-size:14px;font-weight:400;color:var(--muted)} /* HD steht außerhalb von Ist und Saldo */
 table.res tr.hdr td:nth-child(2){background:none}
 .explain{font-size:14px;color:var(--ink2);margin:14px 0 0}
+.calc{margin-top:6px;border-top:1px solid var(--line)}
+.calc .explain{margin-top:0}
+.detail details.calc[open]{padding-bottom:2px}
 #resLines{display:grid;gap:6px;margin-top:10px}
 #resLines p{font-size:13px}
 
@@ -300,6 +309,9 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 @media (hover:hover){table.yr tbody tr[data-m]:hover td{background:var(--sunken)} table.yr tbody tr.cur[data-m]:hover td{background:var(--cur)}}
 #yrToggle{display:none;margin-top:8px}
 #yN{margin-top:10px;font-size:13px}
+.yh .meta .offen{color:inherit}
+.yn{display:block}
+.yn+.yn{margin-top:6px}
 
 /* Einstellungen, Daten */
 .params{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:14px}
@@ -344,11 +356,11 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   body[data-view="monat"] .year,body[data-view="monat"] .prefs,
   body[data-view="auswertung"] .year,body[data-view="auswertung"] .prefs,
   body[data-view="jahr"] .work,body[data-view="jahr"] .prefs,
-  body[data-view="einstellungen"] .work,body[data-view="einstellungen"] .year{display:none}
+  body[data-view="einstellungen"] .work,body[data-view="einstellungen"] .year,body[data-view="einstellungen"] .tnote{display:none}
 }
 @media screen and (max-width:1039px){
-  body[data-view="monat"] .detail,body[data-view="monat"] .proof,
-  body[data-view="auswertung"] .over,body[data-view="auswertung"] .entry{display:none}
+  body[data-view="monat"] .over,body[data-view="monat"] .detail,body[data-view="monat"] .proof,
+  body[data-view="auswertung"] .entry{display:none}
 }
 @media print{ body .tabbar,body .toptabs{display:none} body .bar{position:static} }
 @media (display-mode:standalone){ .top,.getapp{display:none} } /* als installierte App: die Monatsleiste ist die Kopfzeile, der Titel steht schon unter dem App-Symbol */
@@ -364,6 +376,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .ttab{height:40px;padding:0 14px;border:0;border-radius:10px;background:none;color:var(--muted);font:600 14.5px/1 var(--sans);cursor:pointer;touch-action:manipulation}
   .ttab[aria-current="page"]{background:var(--sunken);color:var(--ink)}
   .ttab:active{background:var(--line)}
+  .bar .chip .go{display:none} /* breite Fenster: die Auswertung steht schon neben der Eingabe */
   .prefs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .work{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto 1fr auto}
   .entry{grid-column:1;grid-row:1/span 2}
@@ -382,6 +395,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   table.yr .c-at,table.yr .c-sb,table.yr .c-ib,table.yr .c-hd,table.yr .c-sv,table.yr .c-iv,table.yr .c-dv{display:none}
   table.yr.full .c-at,table.yr.full .c-sb,table.yr.full .c-ib,table.yr.full .c-hd,table.yr.full .c-sv,table.yr.full .c-iv,table.yr.full .c-dv{display:table-cell}
   #yrToggle{display:inline-block}
+  #dYear:not(.full) .yn.abbr{display:none} /* Abkürzungen der ausgeblendeten Spalten erst zeigen, wenn die Spalten zu sehen sind */
 }
 @media (max-width:480px){
   :root{--pad:12px;--barH:54px}
@@ -391,6 +405,10 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .logo{width:28px;height:28px}
   .top h1{font-size:17px}
   .top h1+.sub{display:none} /* am Handy schlanker Kopf wie in einer App; die Erklärung steht bei „Dienste eintragen“ */
+  .entry h2 .when,#aufTitle .mo{display:none} /* der Monat steht direkt darüber in der Leiste */
+  #todayLink{top:8px;right:12px}
+  .bar .chip .long{display:inline;position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap} /* zu sehen ist die Kurzform, vorgelesen wird „Saldo bewertet“ */
+  table.auf tr.sum .sub{display:none}
   #lookSeg{display:flex;width:100%}
   #lookSeg button{flex:1 1 0}
   .install{margin-top:8px}
@@ -398,7 +416,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .getapp .row .act{flex:1 1 auto}
   .bar .nav{width:42px}
   .bar .title{font-size:16px;padding:0 2px}
-  .bar .chip{min-width:84px;padding-left:4px}
+  .bar .chip{min-width:90px;padding-left:4px}
   .bar .chip .v{font-size:15.5px}
   .card{padding:12px}
   details.card{padding:4px 12px}
@@ -431,7 +449,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   table.res th{padding:8px 8px}
   .how{font-size:12px;padding:10px}
   table.auf{font-size:13px}
-  table.auf td,table.auf th{padding:7px 4px}
+  table.auf td,table.auf th{padding:7px 3px}
   table.auf td:nth-child(4){white-space:normal}
 }
 @media (max-width:380px){
@@ -439,10 +457,12 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .pick .code{font-size:13px}
 }
 @media (max-width:340px){
+  table.auf{font-size:12.5px}
+  table.auf td,table.auf th{padding:7px 2px} /* sehr schmale Handys: die Aufstellung passt ohne seitliches Schieben */
   .bar .nav{width:38px}
   .bar .caret{display:none}
   .bar .title{font-size:14.5px}
-  .bar .chip{min-width:78px}
+  .bar .chip{min-width:84px}
   .bar .chip .v{font-size:15px}
   .pick .code{font-size:12.5px}
   .day .tag{font-size:9.5px;letter-spacing:-.02em;padding:0 1px}
@@ -518,14 +538,14 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 <nav class="bar" id="bar" aria-label="Monat und Bereich">
   <div class="wrap barin">
     <button type="button" class="nav" id="prevM" aria-label="Vormonat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
-    <button type="button" class="title" id="monthTitle" aria-expanded="false" aria-controls="pickRow" title="Monat und Jahr wählen"><span id="barMonth"></span><svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="vh"> – Monat und Jahr wählen</span></button>
+    <button type="button" class="title" id="monthTitle" aria-expanded="false" aria-controls="pickRow" title="Monat und Jahr wählen"><span id="barMonth"></span><svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="vh">, Monat und Jahr wählen</span></button>
     <button type="button" class="nav" id="nextM" aria-label="Folgemonat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
     <div class="toptabs" role="group" aria-label="Bereich wählen">
       <button type="button" class="ttab" data-go="monat" aria-current="page">Monat</button>
       <button type="button" class="ttab" data-go="jahr">Jahr</button>
       <button type="button" class="ttab" data-go="einstellungen">Einstellungen</button>
     </div>
-    <div class="chip" id="barSaldo"><div class="k"><span class="long">Saldo bewertet</span><span class="short">Saldo bew.</span></div><div class="v" id="barSaldoV"></div></div>
+    <button type="button" class="chip" id="barSaldo" data-go="auswertung" data-top title="Zur Auswertung"><span class="k"><span class="long">Saldo bewertet</span><span class="short" aria-hidden="true">Saldo bew.</span><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span><span class="v" id="barSaldoV"></span><span class="vh">, zur Auswertung</span></button>
     <div class="pickrow" id="pickRow" hidden>
       <label for="month">Monat
         <select id="month"></select>
@@ -548,8 +568,10 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 </nav>
 
 <main class="wrap">
-  <div class="banner" id="loadWarn" hidden>Gespeicherte Daten konnten nicht gelesen werden. Eine Kopie wurde aufbewahrt. Du kannst eine Sicherung importieren oder neu beginnen – mit der ersten Änderung wird neu gespeichert. <button type="button" class="act link" id="loadImp">Sicherung importieren</button> <button type="button" class="act link" id="loadShow">Kopie anzeigen</button></div>
-  <div class="banner bad" id="storeWarn" role="alert" hidden>Achtung: Dieser Browser speichert deine Eingaben nicht (z. B. privater Modus). Beim Schließen gehen sie verloren – bitte jetzt eine Sicherung exportieren. <button type="button" class="act link" id="storeExp">Sicherung exportieren</button></div>
+  <div class="banner" id="loadWarn" hidden>Die gespeicherten Daten lassen sich nicht lesen. Eine Kopie ist aufbewahrt. Du kannst eine Sicherung importieren oder neu anfangen, mit der ersten Änderung wird neu gespeichert. <button type="button" class="act link" id="loadImp">Sicherung importieren</button> <button type="button" class="act link" id="loadShow">Kopie anzeigen</button></div>
+  <div class="banner bad" id="storeWarn" role="alert" hidden>Achtung: Dieser Browser speichert deine Eingaben nicht, zum Beispiel im privaten Modus. Beim Schließen gehen sie verloren. Exportiere jetzt eine Sicherung. <button type="button" class="act link" id="storeExp">Sicherung exportieren</button></div>
+  <p class="banner tnote" id="wnote" hidden><span id="wnoteT"></span> <button type="button" class="act link" id="wnoteB"></button></p>
+  <p class="banner tnote" id="vznote" hidden><span id="vznoteT"></span> <button type="button" class="act link" id="vznoteB">Auf 39 h zurücksetzen</button></p>
 
   <div class="work">
     <section class="over" aria-label="Ergebnis">
@@ -564,15 +586,13 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
           <div class="tile"><div class="k">Dienste (24&nbsp;h)</div><div class="v" id="tDienste">0</div><div class="n" id="tDiensteN"></div></div>
           <div class="tile konto"><div class="k" id="tKontoK">Konto</div><div class="v" id="tKonto">–</div><div class="n" id="tKontoN"></div></div>
         </div>
-        <button type="button" class="act link" id="todayLink" hidden></button>
       </div>
-      <p class="callout" id="wnote" hidden><span id="wnoteT"></span> <button type="button" class="act link" id="wnoteB"></button></p>
-      <p class="callout" id="vznote" hidden><span id="vznoteT"></span> <button type="button" class="act link" id="vznoteB">Auf 39 h zurücksetzen</button></p>
     </section>
 
     <section class="card entry" aria-label="Dienste eintragen">
       <h2>Dienste eintragen <span class="when" id="entryMonth"></span></h2>
-      <p class="sub lead">Erst Diensttyp wählen, dann Tage antippen. Nochmal antippen entfernt den Eintrag. Freie Tage bleiben leer.</p>
+      <button type="button" class="act primary" id="todayLink" hidden>Heute</button>
+      <p class="sub lead">Diensttyp wählen, dann Tage antippen. Nochmal antippen entfernt den Eintrag.</p>
       <div class="paint">
       <div id="brush">
         <div class="legend" id="legend" role="group" aria-label="Diensttyp wählen"></div>
@@ -608,8 +628,11 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
           <tr class="hdr"><td>HD gesondert</td><td id="hdB">–</td><td id="hdV" class="voll">–</td></tr>
         </tbody>
       </table></div>
-      <p id="bewExplain" class="explain"></p>
-      <div id="resLines"></div>
+      <details class="dt calc" id="dCalc">
+        <summary>So wird gerechnet</summary>
+        <p id="bewExplain" class="explain"></p>
+        <div id="resLines"></div>
+      </details>
     </section>
 
     <section class="card proof" aria-label="Zum Nachrechnen">
@@ -622,7 +645,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
         <details class="dt" id="dHow"><summary>Rechenweg anzeigen</summary><pre class="how" id="how"></pre></details>
         <details class="dt" id="dAuf"><summary id="aufTitle">Aufstellung nach Diensttyp</summary>
           <div class="scroll"><table class="auf">
-            <thead><tr><th>Was</th><th>Anzahl</th><th>Voll</th><th>Zählt zu</th><th>Bewertet</th></tr></thead>
+            <thead><tr><th>Was</th><th><span class="long">Anzahl</span><span class="short" title="Anzahl">Anz.</span></th><th>Voll</th><th>Zählt zu</th><th>Bewertet</th></tr></thead>
             <tbody id="tbody"></tbody>
           </table></div>
           <button type="button" class="act link" id="allTypes">Alle Diensttypen anzeigen</button>
@@ -661,7 +684,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 
   <details class="card dt" id="dSettings">
     <summary><h2><span>Tarifwerte</span> <span class="meta" id="setSum"></span></h2></summary>
-    <p class="sub">Musst du normalerweise nicht ändern. Die Werte stammen aus dem TV RD BAR. Wenn du zu einem anderen Jahr wechselst (auch mit ‹ › oder „Heute“), setzt die App die Höchstarbeitszeit auf den TV-Wert dieses Jahres (46 h für 2026, 44 h ab 2027).</p>
+    <p class="sub">Die Werte stammen aus dem TV RD BAR, du musst sie normalerweise nicht ändern. Wechselst du in ein anderes Jahr, stellt die App die Höchstarbeitszeit selbst um (46 h für 2026, 44 h ab 2027).</p>
     <div class="params">
       <label for="w">Höchstarbeitszeit (h/Woche)
         <input id="w" type="number" inputmode="decimal" enterkeyhint="done" min="30" max="60" step="0.5" value="46"><span class="note" id="wErr"></span>
@@ -691,7 +714,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 
   <section class="card data" aria-label="Daten und Sicherung">
     <h2>Daten &amp; Sicherung</h2>
-    <p class="sub">Alle Monate werden automatisch auf diesem Gerät gespeichert – ohne Anmeldung und ohne Internet. Für ein neues Handy oder als Sicherheitskopie: Sicherung exportieren und dort importieren. Die App auf dem Home-Bildschirm und der Browser haben getrennte Speicher.</p>
+    <p class="sub">Deine Eingaben werden automatisch auf diesem Gerät gespeichert, ohne Anmeldung und ohne Internet. Für ein neues Handy oder als Sicherheitskopie: Sicherung exportieren und dort importieren. Die App auf dem Home-Bildschirm und der Browser speichern getrennt.</p>
     <div class="row">
       <button class="act" id="exp" type="button">Sicherung exportieren</button>
       <button class="act" id="impBtn" type="button">Sicherung importieren</button>
@@ -719,7 +742,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 </main>
 
 <script>
-const APP_VERSION='2.4 · Stand 17.11.2026';
+const APP_VERSION='2.5 · Stand 17.11.2026';
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 // Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
 const TYPES=[
@@ -812,7 +835,7 @@ function init(){
   wireBar();
   wireEntry();
   const phone=matchMedia('(max-width:480px)').matches;
-  $('dHow').open=!phone; $('dAuf').open=true;
+  $('dHow').open=!phone; $('dAuf').open=true; $('dCalc').open=!phone;
   $('dSettings').open=false;
   if(navigator.share) $('share').hidden=false;
   ['year','month'].forEach(i=>$(i).addEventListener('change',()=>{ if(i==='year') syncW(); render(); }));
@@ -884,10 +907,10 @@ function hintText(err){
   const f=last?last.f:((+$('vz').value||39)/(+$('w').value||46));
   const t=T(state.sel)||{}, h24=fmt(24*f), fp=fmt(f*100,2)+' %';
   let s='';
-  if(err) s='Bitte Minuten eintragen (1–1440) – solange wird nichts eingetragen.';
+  if(err) s='Bitte erst die Minuten eintragen (1 bis 1440).';
   else if(state.sel==='') s='Tag leeren: Antippen entfernt alle Einträge des Tages.';
-  else if(t.ue) s=`Ü Überstunden: Antippen trägt diese Minuten ein, nochmal antippen entfernt sie. Diensttag × ${fp}, sonst 1:1.`;
-  else if(t.brm) s='BR Betriebsrat: Antippen trägt diese Minuten ein, nochmal antippen entfernt sie. Zählt 1:1.';
+  else if(t.ue) s=`Ü Überstunden: Tag antippen trägt die Minuten ein, nochmal antippen entfernt sie. An Diensttagen × ${fp}, sonst 1:1.`;
+  else if(t.brm) s='BR Betriebsrat: Tag antippen trägt die Minuten ein, nochmal antippen entfernt sie. Zählt 1:1.';
   else if(t.hd) s=`HD Hintergrunddienst: Zuschlag ${fmtW(t.h)} h, wird gesondert ausgewiesen und ist nicht im Saldo. Eine Stufe je Tag.`;
   else if(t.id==='t24') s=`24-h-Dienst: zählt 24 h voll, ${h24} h bewertet.`;
   else if(t.id==='u') s=`U Urlaub: zählt wie ein 24-h-Dienst (${h24} h bewertet).`;
@@ -913,7 +936,7 @@ function doUndo(){
     goTo(+s.year,+s.month); // zum betroffenen Monat springen; rendert über das change-Ereignis
   } else render();
   live(`Wiederhergestellt: ${lbl}`);
-  if(lbl==='Import'||lbl==='Alles löschen') $('saveStatus').textContent='Rückgängig gemacht – der vorherige Stand ist wiederhergestellt.';
+  if(lbl==='Import'||lbl==='Alles löschen') $('saveStatus').textContent='Rückgängig gemacht. Der vorherige Stand ist wiederhergestellt.';
 }
 function wireEntry(){
   $('cal').addEventListener('click',e=>{
@@ -953,11 +976,11 @@ function wireEntry(){
     clearTimeout(c._t); delete c.dataset.sure;
     takeUndo('Monat leeren');
     [state.plan,state.hd,state.ue,state.br].forEach(o=>Object.keys(o).forEach(k=>{ if(k.startsWith(`${y}-${pad(m+1)}-`)) delete o[k]; }));
-    live(`${MONATE[m]} geleert – Rückgängig möglich`);
+    live(`${MONATE[m]} geleert. Rückgängig ist möglich.`);
     render();
   });
   $('allTypes').addEventListener('click',()=>{ showAllTypes=!showAllTypes; render(); });
-  $('yrToggle').addEventListener('click',()=>{ const t=$('ytable'); t.classList.toggle('full'); $('yrToggle').textContent=t.classList.contains('full')?'Weniger Spalten':'Alle Spalten anzeigen'; });
+  $('yrToggle').addEventListener('click',()=>{ const t=$('ytable'); t.classList.toggle('full'); $('dYear').classList.toggle('full',t.classList.contains('full')); $('yrToggle').textContent=t.classList.contains('full')?'Weniger Spalten':'Alle Spalten anzeigen'; });
   $('ybody').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-m]'); if(tr){ goTo(+$('year').value,+tr.dataset.m); setView('monat',{top:true}); } });
   $('wnoteB').addEventListener('click',()=>{ $('w').value=+$('year').value>=2027?44:46; render(); });
   $('vznoteB').addEventListener('click',()=>{ $('vz').value=39; render(); });
@@ -965,7 +988,7 @@ function wireEntry(){
     const i=e.target.closest('input[data-k]'); if(!i) return;
     const o=i.dataset.s==='br'?state.br:state.ue;
     const v=Math.round(+i.value||0);
-    if(v<1||v>1440){ i.value=o[i.dataset.k]; const s=i.nextElementSibling; s.textContent='Mindestens 1 Minute, höchstens 1440 – zum Entfernen × tippen.'; s.className='bad'; return; }
+    if(v<1||v>1440){ i.value=o[i.dataset.k]; const s=i.nextElementSibling; s.textContent='Erlaubt sind 1 bis 1440 Minuten. Zum Entfernen × tippen.'; s.className='bad'; return; }
     if(v===o[i.dataset.k]){ i.value=v; return; }
     takeUndo('Minuten'); o[i.dataset.k]=v; render();
   });
@@ -1004,8 +1027,8 @@ function save(force){
   const j=dataJson(); if(!force&&j===lastJson) return true;
   const dbody=dataBody(); if(dbody!==lastDataBody){ localSaved=new Date().toISOString(); lastDataBody=dbody; }
   const snap=snapshot(); cloudQueue(snap);
-  try{ localStorage.setItem(KEY,JSON.stringify(snap)); lastJson=j; stamp(`Automatisch gespeichert · ${timeNow()} · nur auf diesem Gerät`); $('storeWarn').hidden=true; $('loadWarn').hidden=true; return true; }
-  catch(e){ stamp('Nicht gespeichert – bitte Sicherung exportieren',true); $('storeWarn').hidden=false; return false; }
+  try{ localStorage.setItem(KEY,JSON.stringify(snap)); lastJson=j; stamp(`Automatisch gespeichert um ${timeNow()}, nur auf diesem Gerät`); $('storeWarn').hidden=true; $('loadWarn').hidden=true; return true; }
+  catch(e){ stamp('Nicht gespeichert. Bitte Sicherung exportieren.',true); $('storeWarn').hidden=false; return false; }
 }
 function load(){
   let raw=null;
@@ -1014,7 +1037,7 @@ function load(){
   try{
     const d=JSON.parse(raw); applyData(d); localSaved=d.saved||'';
     const t=d.saved?new Date(d.saved):null;
-    stamp(t&&!isNaN(t)?`Stand ${t.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}, ${t.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · gespeichert auf diesem Gerät`:'Gespeichert auf diesem Gerät');
+    stamp(t&&!isNaN(t)?`Stand ${t.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}, ${t.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}, gespeichert auf diesem Gerät`:'Gespeichert auf diesem Gerät');
   }catch(e){
     defektRaw=raw;
     try{ localStorage.setItem(KEY+'-defekt-'+localDate(new Date()),raw); }catch(_){}
@@ -1059,7 +1082,7 @@ function wireStorage(){
     takeUndo('Import');
     try{ applyData(d); }catch(err){ undo=null; $('saveStatus').textContent='Die Datei konnte nicht gelesen werden: '+err.message; return; }
     guardYM(); render();
-    $('saveStatus').textContent=save()?'Sicherung eingelesen und gespeichert.':'Sicherung eingelesen – Speichern ist in diesem Browser nicht möglich, bitte vor dem Schließen exportieren.';
+    $('saveStatus').textContent=save()?'Sicherung eingelesen und gespeichert.':'Sicherung eingelesen. Speichern ist in diesem Browser nicht möglich, bitte vor dem Schließen exportieren.';
   });
   $('loadShow').addEventListener('click',()=>{ setView('einstellungen'); const b=$('expBox'); b.value=defektRaw; b.style.display='block'; b.scrollIntoView({block:'center'}); b.focus(); });
   $('wipe').addEventListener('click',()=>{
@@ -1135,14 +1158,14 @@ function render(){
   T('fa').h=Math.max(0,num('hfa',7.8));
   ['hd1','hd2','hd3'].forEach((id,i)=>{const t=T(id); t.h=Math.max(0,num(id,[2,4,6][i])); t.name=`HD ${fmtW(t.h)} h`; t.label=t.name; t.pill=`HD ${fmtW(t.h)}`; t.short=t.pill; t.mini=`HD${fmtW(t.h)}`;
     const b=document.querySelector(`#hdSeg button[data-hd="${id}"]`); if(b) b.textContent=`${fmtW(t.h)} h`;});
-  ['w','vz','hfb','hfa','hd1','hd2','hd3'].forEach(id=>{ const el=$(id); $(id+'Err').textContent=el.validity.valid?'':`Ungültiger Wert – erlaubt sind ${el.min} bis ${el.max}.`; });
+  ['w','vz','hfb','hfa','hd1','hd2','hd3'].forEach(id=>{ const el=$(id); $(id+'Err').textContent=el.validity.valid?'':`Ungültiger Wert. Erlaubt sind ${el.min} bis ${el.max}.`; });
   const hol=holidays(y), sp=special(y);
   const f=VZ/W;
   const wDev=(y===2026&&W!==46)||(y>=2027&&W!==44), vDev=VZ!==39;
   $('wnote').hidden=!wDev;
-  if(wDev){ $('wnoteT').textContent=`Hinweis: Laut TV RD BAR gilt 46 h ab 01.01.2026 und 44 h ab 01.01.2027. Du hast ${fmtW(W)} h eingestellt – Soll und Umrechnung ändern sich dadurch.`; $('wnoteB').textContent=`Auf ${y>=2027?44:46} h zurücksetzen`; }
+  if(wDev){ $('wnoteT').textContent=`Du hast ${fmtW(W)} h als Höchstarbeitszeit eingestellt. Laut TV RD BAR gelten 46 h ab 2026 und 44 h ab 2027. Soll und Umrechnung ändern sich dadurch.`; $('wnoteB').textContent=`Auf ${y>=2027?44:46} h zurücksetzen`; }
   $('vznote').hidden=!vDev;
-  if(vDev) $('vznoteT').textContent=`Hinweis: Vollzeit laut TV RD BAR ist 39 h. Du hast ${fmtW(VZ)} h eingestellt – Soll bewertet und Umrechnung ändern sich dadurch.`;
+  if(vDev) $('vznoteT').textContent=`Du hast ${fmtW(VZ)} h als Vollzeit eingestellt. Laut TV RD BAR sind es 39 h. Soll bewertet und Umrechnung ändern sich dadurch.`;
 
   // Kalender
   const first=new Date(y,m,1), dim=new Date(y,m+1,0).getDate();
@@ -1204,14 +1227,14 @@ function render(){
   $('prevM').disabled=(y===2026&&m===0); $('nextM').disabled=(y===2035&&m===11);
   const c=curYM(), isCur=(c.y===y&&c.m===m);
   $('todayM').hidden=isCur; $('todayLink').hidden=isCur;
-  if(!isCur) $('todayLink').textContent=`Zum aktuellen Monat (${MONATE[c.m]} ${c.y}) wechseln`;
+  if(!isCur) $('todayLink').title=`Zum aktuellen Monat (${MONATE[c.m]} ${c.y}) wechseln`;
 
   // Ergebnis-Kacheln
   $('resMonth').textContent=`${MONATE[m]} ${y}`;
   $('hero').className='tile hero '+(nAny?sc(saldo):'leer');
   $('heroK').textContent=`Saldo ${MONATE[m]}, bewertet`;
   $('heroV').textContent=nAny?sg(saldo):'–';
-  $('heroN').textContent=nAny?verdict(saldo,m):`Noch nichts eingetragen. Soll im ${MONATE[m]}: ${fmt(sollDienste)} Dienste à 24 h = ${fmt(sollVoll)} h voll, ${fmt(sollBew)} h bewertet.`;
+  $('heroN').textContent=nAny?verdict(saldo,m).replace(' (bewertet)',''):`Noch nichts eingetragen. Soll im ${MONATE[m]}: ${fmt(sollDienste)} Dienste à 24 h = ${fmt(sollVoll)} h voll, ${fmt(sollBew)} h bewertet.`;
   $('tDienste').textContent=nIst; $('tDiensteN').textContent=`Soll ${fmt(sollDienste)}`;
   $('tIstB').textContent=fmt(istBew)+' h'; $('tIstBN').textContent=`Soll ${fmt(sollBew)} h`;
   // Balken Ist gegen Soll (bewertet): der farbige Abschnitt ist genau der Saldo, der Strich markiert das Soll
@@ -1232,7 +1255,7 @@ function render(){
   $('salV').textContent=sg(salV); $('salV').className='voll '+sc(salV);
   $('salB').textContent=sg(saldo); $('salB').className=sc(saldo);
   $('hdB').textContent=fmt(stdHD)+' h'; $('hdV').textContent='–';
-  $('bewExplain').textContent=`Voll = Stunden wie geleistet (${fmtW(W)}-h-Woche). Bewertet = auf die ${fmtW(VZ)}-h-Woche umgerechnet (× ${fmt(f*100,2)} %): ein 24-h-Dienst zählt ${fmt(24*f)} h. FB und BR zählen 1:1, HD wird gesondert ausgewiesen.`;
+  $('bewExplain').textContent=`Voll: Stunden wie geleistet (${fmtW(W)}-h-Woche). Bewertet: auf die ${fmtW(VZ)}-h-Woche umgerechnet (× ${fmt(f*100,2)} %), ein 24-h-Dienst zählt dann ${fmt(24*f)} h. FB und BR zählen 1:1, HD wird gesondert ausgewiesen.`;
   const lines=[];
   let l1=`Soll-Basis: ${at} Werktage (Mo–Fr, Feiertage nicht abgezogen) = ${fmt(sollDienste)} Dienste à 24 h`;
   if(feiertage.length) l1+=` · Feiertage: ${feiertage.join(', ')} (Ausgleich wird extern gutgeschrieben)`;
@@ -1240,7 +1263,7 @@ function render(){
   if(nAny){
     const items=rows.filter(r=>r.n>0).map(r=>(r.t.ue||r.t.brm)?`${r.t.ue?'Ü':'BR'} an ${r.n} ${r.n===1?'Tag':'Tagen'} (${hm(Math.round(r.vol*60))})`:r.t.hd?`${r.t.name} an ${r.n} ${r.n===1?'Tag':'Tagen'}`:`${r.n} × ${r.t.name}`);
     lines.push('Eingetragen: '+items.join(' · '));
-    if(rows.some(r=>['fb','br','kfb','kbr'].includes(r.t.id)&&r.n>0)) lines.push('FB und BR zählen 1:1, ohne Umrechnung – auch als K statt FB/BR.');
+    if(rows.some(r=>['fb','br','kfb','kbr'].includes(r.t.id)&&r.n>0)) lines.push('FB und BR zählen 1:1 ohne Umrechnung, auch als K statt FB oder BR.');
     if(rows.find(r=>r.t.id==='fa').n>0) lines.push(`FA Feiertagsausgleich zählt ${fmtW(T('fa').h)} h je Feiertag und wird wie ein Dienst umgerechnet.`);
     if(stdHD>0) lines.push(`HD-Zuschlag ${fmt(stdHD)} h wird gesondert ausgewiesen und ist nicht in Ist und Saldo enthalten.`);
     if(rows.find(r=>r.t.ue).n>0) lines.push(`Ü-Minuten zählen an Diensttagen × ${fmt(f*100,2)} %, an anderen Tagen 1:1.`);
@@ -1248,18 +1271,18 @@ function render(){
   $('resLines').innerHTML=lines.map(s=>`<p class="sub">${esc(s)}</p>`).join('');
 
   // Aufstellung
-  $('aufTitle').textContent=`Aufstellung ${MONATE[m]} ${y} nach Diensttyp`;
+  $('aufTitle').innerHTML=`<span>Aufstellung <span class="mo">${MONATE[m]} ${y} </span>nach Diensttyp</span>`;
   const rowHtml=r=>`<tr data-id="${r.t.id}"><td><span class="long">${r.t.name}</span><span class="short" title="${r.t.name}">${r.t.pill}</span></td><td>${r.n}</td><td>${r.t.hd?'–':fmt(r.vol,2)+' h'}</td><td>${r.t.ue?(r.vol?fmt(r.fac*100,2)+' %':'–'):r.t.hd?'gesondert':r.t.f==='w'?fmt(r.fac*100,2)+' %':'100 %'}</td><td>${fmt(r.bew)} h</td></tr>`;
   const shown=rows.filter(r=>!r.t.hd&&(showAllTypes||r.n>0)), shownHd=rows.filter(r=>r.t.hd&&(showAllTypes||r.n>0));
   $('tbody').innerHTML=(!shown.length&&!shownHd.length?`<tr><td colspan="5" style="text-align:left;color:var(--muted)">Noch nichts eingetragen.</td></tr>`:
     (shown.length?shown.map(rowHtml).join('')+`<tr class="sum"><td><strong>Summe</strong> <span class="sub">(${nIst} × 24-h-Dienst)</span></td><td><strong>${nAll}</strong></td><td><strong>${fmt(istVoll,2)} h</strong></td><td></td><td><strong>${fmt(istBew)} h</strong></td></tr>`:'')
-    +(shownHd.length?`<tr class="sect"><td colspan="5">Hintergrunddienst (HD) – gesondert, nicht in Summe und Saldo</td></tr>`+shownHd.map(rowHtml).join('')+`<tr class="sum"><td><strong>HD gesamt</strong></td><td><strong>${nHD}</strong></td><td></td><td></td><td><strong>${fmt(stdHD)} h</strong></td></tr>`:''));
+    +(shownHd.length?`<tr class="sect"><td colspan="5">Hintergrunddienst (HD): gesondert, nicht in Summe und Saldo</td></tr>`+shownHd.map(rowHtml).join('')+`<tr class="sum"><td><strong>HD gesamt</strong></td><td><strong>${nHD}</strong></td><td></td><td></td><td><strong>${fmt(stdHD)} h</strong></td></tr>`:''));
   $('allTypes').textContent=showAllTypes?'Nur eingetragene anzeigen':'Alle Diensttypen anzeigen';
 
   // Eingabe-Karte
   $('entryMonth').textContent=`${MONATE[m]} ${y}`;
   $('firstHint').hidden=nAny>0;
-  $('firstHint').textContent=`Noch nichts eingetragen für ${MONATE[m]} ${y}. Wähle oben den Diensttyp und tippe dann die Tage an – alles wird automatisch gespeichert.`;
+  $('firstHint').textContent='Noch nichts eingetragen. Freie Tage bleiben leer, gespeichert wird automatisch.';
   $('calNote').textContent=`${at} Werktage`;
   const cl=$('clear'); clearTimeout(cl._t); delete cl.dataset.sure; cl.textContent=`${MONATE[m]} leeren`; cl.disabled=!nAny;
   $('undo').disabled=!undo; $('undo').textContent=undo?`Rückgängig: ${undo.label}`:'Rückgängig';
@@ -1269,12 +1292,12 @@ function render(){
   // Jahr und Konto
   const yr=renderYear(y,m,W,VZ,f);
   $('tKontoK').textContent=`Konto ${y} bis ${mon(m)}`;
-  const kt=$('tKonto'); kt.textContent=sg(yr.konto); kt.className='v '+sc(yr.konto);
-  const kn=$('tKontoN'); kn.textContent=yr.missing.length?`${monthRanges(yr.missing)} ohne Eingaben – ${yr.missing.length===1?'zählt':'zählen'} mit dem ganzen Soll (bewertet) als Minus`:'Saldo bewertet seit Januar'; kn.classList.toggle('warn',yr.missing.length>0);
+  const kt=$('tKonto'); kt.textContent=sg(yr.konto); kt.className='v '+sc(yr.konto)+(yr.missing.length?' offen':'');
+  const kn=$('tKontoN'); kn.textContent=yr.missing.length?`${monthRanges(yr.missing)} ohne Eingaben. ${yr.missing.length===1?'Der Monat zählt mit seinem':'Sie zählen mit ihrem'} ganzen Soll als Minus.`:'Saldo bewertet seit Januar'; kn.classList.toggle('warn',yr.missing.length>0);
 
   // Einstellungen, Fußzeile
   $('setSum').textContent=`${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · FB ${fmtW(T('fb').h)} h · FA ${fmtW(T('fa').h)} h · HD ${fmtW(T('hd1').h)}/${fmtW(T('hd2').h)}/${fmtW(T('hd3').h)} h`+((wDev||vDev)?' · abweichend vom TV':'');
-  $('setNote').textContent=`FB und BR zählen 1:1, HD wird gesondert ausgewiesen. 24-h-Dienste, U, K statt Dienst und FA werden mit Vollzeit ÷ Höchstarbeitszeit bewertet (aktuell ${fmt(f*100,2)} %). Die Minuten je Antippen für Ü und BR stellst du direkt neben der Diensttyp-Auswahl ein.`;
+  $('setNote').textContent=`24-h-Dienste, U, K statt Dienst und FA werden mit Vollzeit ÷ Höchstarbeitszeit bewertet, aktuell ${fmt(f*100,2)} %. FB und BR zählen 1:1, HD wird gesondert ausgewiesen. Die Minuten für Ü und BR stellst du beim Eintragen ein, direkt unter den Diensttypen.`;
   $('foot').textContent=`TV RD BAR § 6 Abs. 4 · Höchstarbeitszeit ${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · Feiertage Brandenburg, Soll ohne Feiertagsabzug · Version ${APP_VERSION}`;
 
   last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD};
@@ -1290,7 +1313,7 @@ function renderUe(y,m,f){
   if(!es.length){ box.hidden=true; box.innerHTML=''; return; }
   const act=document.activeElement, fk=act&&act.tagName==='INPUT'&&act.dataset&&act.dataset.k?[act.dataset.k,act.dataset.s]:null;
   box.hidden=false;
-  box.innerHTML=`<h3 class="h2">Überstunden und Betriebsrat im ${MONATE[m]} · Minuten je Tag</h3>`+es.map(([st,k,mi])=>{
+  box.innerHTML=`<h3 class="h2">Überstunden und Betriebsrat im ${MONATE[m]} (Minuten je Tag)</h3>`+es.map(([st,k,mi])=>{
     const fa=st==='ue'?dayFactor(k,f):1, d=+k.slice(8), mo=+k.slice(5,7), nm=st==='ue'?'Ü':'BR', full=st==='ue'?'Überstunden':'Betriebsrat';
     return `<div class="uerow"><span>${nm} ${d}.${mo}.</span><input type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="${mi}" data-k="${k}" data-s="${st}" aria-label="${full} in Minuten am ${d}.${mo}."><span>= ${hm(mi)} × ${fmt(fa*100,2)} % = <strong>${fmt(mi/60*fa)} h</strong></span><button type="button" class="act x" data-del="${k}" data-s="${st}" aria-label="${full} am ${d}.${mo}. entfernen" title="Entfernen">×</button></div>`;
   }).join('')+`<p class="sub" style="margin:8px 0 0">Ü: × ${fmt(f*100,2)} % an Tagen mit 24-h-Dienst, U, K statt Dienst oder FA, sonst × 100 %. BR zählt immer 1:1.</p>`;
@@ -1322,8 +1345,8 @@ function renderYear(y,curM,W,VZ,f){
   const dV=tIV-tSV, dB=tIB-tSB;
   html+=`<tr class="sum"><td>Jahr</td><td class="c-dienste"></td><td class="c-at">${tAT}</td><td class="c-sb">${fmt(tSB)}</td><td class="c-ib">${fmt(tIB)}</td><td class="c-db ${sc(dB)}">${sg(dB)}</td><td class="c-konto"></td><td class="c-hd">${tHD?fmt(tHD):'–'}</td><td class="c-sv">${fmt(tSV)}</td><td class="c-iv">${fmt(tIV)}</td><td class="c-dv ${sc(dV)}">${sg(dV)}</td></tr>`;
   $('ybody').innerHTML=html;
-  $('yHead').textContent=`Jahresübersicht ${y}`; $('yTitle').innerHTML=`Konto bis ${mon(curM)}: <span class="${sc(konto)}">${sg(konto)} h</span>`;
-  $('yN').textContent=`Konto = Saldo bewertet, aufgelaufen seit Januar · bew. = bewertet (${fmtW(VZ)}-h-Woche) · voll = ${fmtW(W)}-h-Woche · AT = Werktage (Mo–Fr, Feiertage nicht abgezogen) · HD ges. = Hintergrunddienst, gesondert, nicht im Saldo · • = Monat mit Eingaben. Monate ohne Eingaben zählen mit ihrem ganzen Soll als Minus. Monatsname antippen zeigt den Monat.`;
+  $('yHead').textContent=`Jahresübersicht ${y}`; $('yTitle').innerHTML=`Konto bis ${mon(curM)}: <span class="${sc(konto)}${missing.length?' offen':''}">${sg(konto)} h</span>`;
+  $('yN').innerHTML=`<span class="yn">Konto: Saldo bewertet, aufgelaufen seit Januar. Monate ohne Eingaben zählen mit ihrem ganzen Soll als Minus. Der Punkt • markiert Monate mit Eingaben. Monat antippen öffnet ihn.</span><span class="yn abbr">bew. = bewertet (${fmtW(VZ)}-h-Woche), voll = ${fmtW(W)}-h-Woche, AT = Werktage Mo bis Fr (Feiertage nicht abgezogen), HD ges. = Hintergrunddienst, gesondert und nicht im Saldo.</span>`;
   return {konto,missing};
 }
 function buildText(){
@@ -1414,7 +1437,7 @@ function setLook(dark,store){
 }
 function initShell(){
   try{ history.scrollRestoration='manual'; }catch(e){}
-  document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) setView(b.dataset.go,{again:true}); });
+  document.addEventListener('click',e=>{ const b=e.target.closest('[data-go]'); if(b) setView(b.dataset.go,{again:true,top:b.hasAttribute('data-top')}); }); // data-top: Bereich am Anfang öffnen (Saldo in der Leiste)
   window.addEventListener('popstate',e=>{
     const target=(e.state&&e.state.sbView)||'monat';
     if(backWait){ // selbst ausgelöst: Anzeige stimmt schon. Wurde inzwischen ein anderer Bereich gewählt, bekommt er seinen Eintrag.
