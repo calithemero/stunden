@@ -17,9 +17,9 @@ try{ if(localStorage.getItem('stundenbewertung-ansicht')==='dunkel'){ document.d
 <meta name="apple-mobile-web-app-title" content="Stunden">
 <style>
 /* Aufbau: Kopf, Monatsleiste (klebt), darunter ein Bereich nach Wahl.
-   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand: Monat (Dienste eintragen), Auswertung (Ergebnis, Soll und Ist, Zuschlagsstunden, Zum Nachrechnen), Jahr, Einstellungen.
+   Handy und Tablet: vier Bereiche über die Leiste am unteren Rand: Monat (Dienste eintragen), Auswertung (Ergebnis, Soll und Ist, Zuschläge, Zum Nachrechnen), Jahr, Einstellungen (Darstellung, Entgelt, Tarifwerte, Daten, Was ist neu).
    Der Saldo steht dabei immer in der Monatsleiste und führt per Antippen zur Auswertung.
-   Ab 1040 px Breite: drei Bereiche oben in der Monatsleiste; „Monat“ zeigt Eingabe und Auswertung nebeneinander, darunter über die ganze Breite Zuschlagsstunden und Zum Nachrechnen.
+   Ab 1040 px Breite: drei Bereiche oben in der Monatsleiste; „Monat“ zeigt Eingabe und Auswertung nebeneinander, darunter über die ganze Breite Zuschläge und Zum Nachrechnen.
    Alle Bereiche stehen immer im Dokument und werden gemeinsam berechnet, die Auswahl blendet nur ein und aus.
    Darstellung: hell ist der Standard, dunkel wählbar (Einstellungen), gemerkt je Gerät.
    Farbe steht nur für Bedeutung: Diensttypen, Plus/Minus, Warnungen. Alles andere bleibt neutral. */
@@ -273,7 +273,7 @@ table.res tr.hdr td:nth-child(2){background:none}
 #resLines{display:grid;gap:6px;margin-top:10px}
 #resLines p{font-size:13px}
 
-/* Zuschlagsstunden: Stunden je Zuschlagsart aus den 24-h-Diensten, zum Vergleich mit dem Lohnzettel */
+/* Zuschläge: Stunden je Zuschlagsart aus den 24-h-Diensten, dazu Umkleidezeiten und HD-Dienst; mit Entgeltgruppe und Stufe auch der Betrag. Zum Vergleich mit dem Lohnzettel */
 .zus .lead{margin:4px 0 0;max-width:70ch}
 .zgrid{display:grid;grid-template-columns:minmax(0,1fr)}
 dl.zu{margin:8px 0 0}
@@ -282,6 +282,10 @@ dl.zu dt{font-weight:600;min-width:0}
 dl.zu .zs{display:block;font-size:13px;line-height:1.4;font-weight:400;color:var(--muted)}
 dl.zu dd{margin:0;flex:none;font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
 dl.zu .null dd{font-weight:400;color:var(--muted)}
+dl.zu dd{text-align:right}
+dl.zu .ze{display:block;margin-top:1px;font-size:13.5px;line-height:1.4;font-weight:400}
+dl.zu .sum{border-bottom:0}
+#zuEg{margin:6px 0 0}
 #zuPay{margin:12px 0 0;font-size:13.5px;max-width:70ch}
 .zus .calc{margin-top:12px}
 #zuLines{display:grid;gap:6px}
@@ -343,7 +347,17 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 /* Jahr: eigener Bereich, deshalb immer offen */
 .yh{display:flex;flex-direction:column;gap:1px;min-width:0;margin-bottom:8px}
 
-/* Einstellungen: Darstellung, Tarifwerte, Daten */
+/* Einstellungen: Darstellung, Entgelt, Tarifwerte, Daten, Was ist neu */
+#payNote{margin-top:12px;font-size:13px}
+.pay>.sub{max-width:75ch}
+.news{grid-column:1/-1} /* über beide Spalten der Einstellungen */
+.news h3{margin:14px 0 4px;font-size:15px;font-weight:600}
+.news h3 .meta{font-size:13px;font-weight:400;color:var(--muted)}
+.news ul{margin:0;padding-left:20px;display:grid;gap:4px;font-size:14px;line-height:1.5;max-width:75ch}
+.news details{margin-top:14px;border-top:1px solid var(--line)}
+.banner.neu{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 14px;border-color:var(--line);background:var(--surface)}
+.banner.neu .row{gap:4px 16px}
+.foot.credit .act.link{font-size:13px}
 .prefs,.pcol{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
 .lookrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
 .lookrow .sub{margin-top:2px}
@@ -589,6 +603,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   <div class="banner bad" id="storeWarn" role="alert" hidden>Achtung: Dieser Browser speichert deine Eingaben nicht, zum Beispiel im privaten Modus. Beim Schließen gehen sie verloren. Exportiere jetzt eine Sicherung. <button type="button" class="act link" id="storeExp">Sicherung exportieren</button></div>
   <p class="banner tnote" id="wnote" hidden><span id="wnoteT"></span> <button type="button" class="act link" id="wnoteB"></button></p>
   <p class="banner tnote" id="vznote" hidden><span id="vznoteT"></span> <button type="button" class="act link" id="vznoteB">Auf 39 h zurücksetzen</button></p>
+  <div class="banner neu" id="neuNote" hidden><span><strong>Neu in Version 2.9:</strong> Zuschläge in Euro, HD3 und HD6 wie im Dienstplan.</span> <span class="row"><button type="button" class="act link" id="neuShow">Was ist neu?</button> <button type="button" class="act link" id="neuClose">Ausblenden</button></span></div>
 
   <div class="work">
     <section class="over" aria-label="Ergebnis">
@@ -616,7 +631,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
         <div class="hint" id="selHint">
           <span id="hueWrap" hidden><label class="vh" for="hue">Überstunden: Minuten je Antippen</label><input id="hue" type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="60"> Min</span>
           <span id="mbrWrap" hidden><label class="vh" for="mbr">Betriebsrat: Minuten je Antippen</label><input id="mbr" type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="480"> Min</span>
-          <span id="hdWrap" hidden><span class="seg" id="hdSeg" role="group" aria-label="HD-Stufe wählen"><button type="button" data-hd="hd1" aria-pressed="false">2 h</button><button type="button" data-hd="hd2" aria-pressed="false">4 h</button><button type="button" data-hd="hd3" aria-pressed="false">6 h</button></span></span>
+          <span id="hdWrap" hidden><span class="seg" id="hdSeg" role="group" aria-label="HD-Stufe wählen"><button type="button" data-hd="hd1" aria-pressed="false">HD</button><button type="button" data-hd="hd2" aria-pressed="false">HD3</button><button type="button" data-hd="hd3" aria-pressed="false">HD6</button></span></span>
           <span id="selText" aria-live="polite"></span>
         </div>
       </div>
@@ -652,9 +667,10 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
       </details>
     </section>
 
-    <section class="card zus" aria-label="Zuschlagsstunden">
-      <h2>Zuschlagsstunden <span class="when" id="zuMonth"></span></h2>
+    <section class="card zus" aria-label="Zuschläge">
+      <h2>Zuschläge <span class="when" id="zuMonth"></span></h2>
       <p class="sub lead" id="zuLead"></p>
+      <p class="sub" id="zuEg" hidden><span id="zuEgT"></span> <button type="button" class="act link" id="zuEgB">Entgeltgruppe wählen</button></p>
       <div class="zgrid">
         <div>
           <dl class="zu" id="zuList"></dl>
@@ -714,6 +730,20 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
     </div>
   </section>
 
+  <section class="card pay" id="payCard" aria-label="Entgelt">
+    <h2>Entgelt</h2>
+    <p class="sub">Für die Zuschläge in Euro. Entgeltgruppe und Stufe stehen auf dem Lohnzettel im Feld „Tariftabelle“, zum Beispiel N (5) für Entgeltgruppe N, Stufe 5. Die Auswahl gilt für alle Monate.</p>
+    <div class="params">
+      <label for="eg">Entgeltgruppe
+        <select id="eg"><option value="">Nicht gewählt</option><option value="N">N, Notfallsanitäter</option><option value="4">4, Rettungssanitäter</option><option value="6">6, Rettungsassistent</option></select>
+      </label>
+      <label for="st">Stufe
+        <select id="st" disabled><option value="">Nicht gewählt</option></select>
+      </label>
+    </div>
+    <p class="sub" id="payNote"></p>
+  </section>
+
   <details class="card dt" id="dSettings">
     <summary><h2><span>Tarifwerte</span> <span class="meta" id="setSum"></span></h2></summary>
     <p class="sub">Die Werte stammen aus dem TV RD BAR, du musst sie normalerweise nicht ändern. Wechselst du in ein anderes Jahr, stellt die App die Höchstarbeitszeit selbst um (46 h für 2026, 44 h ab 2027).</p>
@@ -730,13 +760,13 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
       <label for="hfa">Feiertagsausgleich (FA): Stunden je Feiertag
         <input id="hfa" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.05" value="7.8"><span class="note" id="hfaErr"></span>
       </label>
-      <label for="hd1">Hintergrunddienst (HD) Stufe 1: Zuschlag in h
+      <label for="hd1">HD ohne Abruf: Zuschlag in h
         <input id="hd1" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="2"><span class="note" id="hd1Err"></span>
       </label>
-      <label for="hd2">HD Stufe 2: Zuschlag in h
-        <input id="hd2" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="4"><span class="note" id="hd2Err"></span>
+      <label for="hd2"><span id="hd2K">HD3</span>, Abruf innerhalb von 96 Stunden: Zuschlag in h
+        <input id="hd2" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="3"><span class="note" id="hd2Err"></span>
       </label>
-      <label for="hd3">HD Stufe 3: Zuschlag in h
+      <label for="hd3"><span id="hd3K">HD6</span>, Abruf innerhalb von 24 Stunden: Zuschlag in h
         <input id="hd3" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="6"><span class="note" id="hd3Err"></span>
       </label>
     </div>
@@ -766,15 +796,37 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
       <button class="act danger" id="wipe" type="button">Alle Daten löschen (alle Monate)</button>
     </div>
   </section>
+
+  <section class="card news" id="news" aria-label="Was ist neu">
+    <h2>Was ist neu</h2>
+    <h3>Version 2.9 <span class="meta">vom 17.11.2026</span></h3>
+    <ul>
+      <li>Zuschläge in Euro: Wähle oben bei „Entgelt“ deine Entgeltgruppe und Stufe, dann steht in der Auswertung neben den Stunden der Betrag wie auf dem Lohnzettel.</li>
+      <li>HD heißt jetzt wie im Dienstplan: HD (2 h), HD3 (3 h) und HD6 (6 h). Wer bisher 4 h eingestellt hatte, rechnet jetzt mit 3 h.</li>
+      <li>Bei den Zuschlägen stehen auch Umkleidezeiten und HD-Dienst.</li>
+      <li>Diese Liste. Nach einem Update weist die App einmal darauf hin.</li>
+    </ul>
+    <details class="dt" id="dNews">
+      <summary>Frühere Versionen</summary>
+      <h3>Version 2.8</h3>
+      <ul><li>Samstagszuschlag (13 bis 21 Uhr) bei den Zuschlagsstunden.</li></ul>
+      <h3>Version 2.7</h3>
+      <ul><li>Zuschlagsstunden in der Auswertung: Nacht, Sonntag und Feiertag je Monat, zum Vergleich mit dem Lohnzettel.</li></ul>
+      <h3>Version 2.6</h3>
+      <ul><li>Das Konto zählt ab dem ersten Monat mit Eingaben und nicht mehr ab Januar.</li><li>Die App öffnet immer den aktuellen Monat.</li></ul>
+      <h3>Version 2.5</h3>
+      <ul><li>Am Handy zeigt „Monat“ nur noch die Eingabe. Ergebnis, Soll und Ist stehen unter „Auswertung“.</li><li>Der Saldo oben in der Leiste führt zur Auswertung.</li></ul>
+    </details>
+  </section>
   </div>
 
   <p class="sub foot" id="foot"></p>
-  <p class="sub foot credit">Entwickelt von Fabian und Hendrik. Bei Feedback sprich uns gerne an.</p>
+  <p class="sub foot credit">Entwickelt von Fabian und Hendrik. Bei Feedback sprich uns gerne an. <button type="button" class="act link" id="neuLink">Was ist neu?</button></p>
   <p id="live" class="vh" role="status"></p>
 </main>
 
 <script>
-const APP_VERSION='2.7 · Stand 17.11.2026';
+const APP_VERSION='2.9 · Stand 17.11.2026';
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 // Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
 const TYPES=[
@@ -788,12 +840,13 @@ const TYPES=[
   {id:'fb', name:'FB Fortbildung', label:'FB Fortbildung', pill:'FB', short:'FB', mini:'FB', h:8, f:'1', cls:'fb', col:'fb', voll:true},
   {id:'br', name:'BR Betriebsrat', label:'BR Betriebsrat (Minuten)', pill:'BR', short:'BR', mini:'BR', h:0, f:'1', cls:'br', col:'br', voll:true, brm:true},
   {id:'ue', name:'Ü Überstunden', label:'Ü Überstunden', pill:'Ü', short:'Ü', mini:'Ü', h:0, f:'x', cls:'ue', col:'ue', voll:true, ue:true},
-  {id:'hd1',name:'HD 2 h', label:'HD 2 h', pill:'HD 2', short:'HD 2', mini:'HD2', h:2, f:'1', cls:'hd1', col:'hd', voll:true, hd:true},
-  {id:'hd2',name:'HD 4 h', label:'HD 4 h', pill:'HD 4', short:'HD 4', mini:'HD4', h:4, f:'1', cls:'hd2', col:'hd', voll:true, hd:true},
-  {id:'hd3',name:'HD 6 h', label:'HD 6 h', pill:'HD 6', short:'HD 6', mini:'HD6', h:6, f:'1', cls:'hd3', col:'hd', voll:true, hd:true}
+  {id:'hd1',name:'HD (2 h)', label:'HD (2 h)', pill:'HD', short:'HD', mini:'HD', h:2, f:'1', cls:'hd1', col:'hd', voll:true, hd:true},   // ohne Abruf
+  {id:'hd2',name:'HD3 (3 h)', label:'HD3 (3 h)', pill:'HD3', short:'HD3', mini:'HD3', h:3, f:'1', cls:'hd2', col:'hd', voll:true, hd:true}, // Abruf innerhalb von 96 Stunden vor Dienstbeginn
+  {id:'hd3',name:'HD6 (6 h)', label:'HD6 (6 h)', pill:'HD6', short:'HD6', mini:'HD6', h:6, f:'1', cls:'hd3', col:'hd', voll:true, hd:true}  // Abruf innerhalb von 24 Stunden vor Dienstbeginn
 ];
 const LEGEND=['t24','u','ka','kfb','kbr','fa','fb','br','ue','hd','']; // 'hd' = eine Pille für die drei HD-Stufen
 const state={sel:'t24', plan:{}, hd:{}, ue:{}, br:{}}; // plan: key "YYYY-MM-DD" -> [type id]; ue/br: key -> Minuten; hd: key -> Stufe
+let hatBestand=false; // true, wenn beim Start schon Daten gespeichert waren
 let lastHd='hd1', last=null, undo=null, ready=false, lastJson='', showAllTypes=false, pendingImport=null, defektRaw='', flashK=null;
 let localSaved='', lastDataBody='';
 const cloud={ref:null,lastSent:'',timer:null,busy:false,pending:null};
@@ -873,6 +926,8 @@ function init(){
   if(navigator.share) $('share').hidden=false;
   ['year','month'].forEach(i=>$(i).addEventListener('change',()=>{ if(i==='year') syncW(); render(); }));
   ['w','vz','hfb','hfa','hd1','hd2','hd3','hue','mbr'].forEach(i=>$(i).addEventListener('input',render));
+  $('eg').addEventListener('change',()=>{ syncStufen(); render(); });
+  $('st').addEventListener('change',render);
   $('copy').addEventListener('click',async()=>{
     const txt=buildText();
     try{ await navigator.clipboard.writeText(txt); $('copied').textContent='Kopiert.'; }
@@ -949,7 +1004,7 @@ function hintText(err){
   else if(state.sel==='') s='Tag leeren: Antippen entfernt alle Einträge des Tages.';
   else if(t.ue) s=`Ü Überstunden: Tag antippen trägt die Minuten ein, nochmal antippen entfernt sie. An Diensttagen × ${fp}, sonst 1:1.`;
   else if(t.brm) s='BR Betriebsrat: Tag antippen trägt die Minuten ein, nochmal antippen entfernt sie. Zählt 1:1.';
-  else if(t.hd) s=`HD Hintergrunddienst: Zuschlag ${fmtW(t.h)} h, wird gesondert ausgewiesen und ist nicht im Saldo. Eine Stufe je Tag.`;
+  else if(t.hd) s=`${t.pill}, ${t.id==='hd1'?'Hintergrunddienst ohne Abruf':t.id==='hd2'?'Abruf innerhalb von 96 Stunden vor Dienstbeginn':'Abruf innerhalb von 24 Stunden vor Dienstbeginn'}: Zuschlag ${fmtW(t.h)} h, wird gesondert ausgewiesen und ist nicht im Saldo. Eine Stufe je Tag.`;
   else if(t.id==='t24') s=`24-h-Dienst: zählt 24 h voll, ${h24} h bewertet.`;
   else if(t.id==='u') s=`U Urlaub: zählt wie ein 24-h-Dienst (${h24} h bewertet).`;
   else if(t.id==='ka') s=`K Krank statt Dienst: zählt wie ein 24-h-Dienst (${h24} h bewertet).`;
@@ -969,6 +1024,7 @@ function doUndo(){
   state.plan=d.plan||{}; state.hd=d.hd||{}; state.ue=d.ue||{}; state.br=d.br||{};
   if(lbl==='Import'){ // nur der Import ändert Tarifwerte – nur dann werden sie zurückgesetzt
     for(const [i,v] of Object.entries(s)) if(SETTINGS.includes(i)&&$(i)) $(i).value=v;
+    syncStufen(s.st);
     guardYM(); render();
   } else if(s.year!==undefined&&s.month!==undefined&&($('year').value!==String(s.year)||$('month').value!==String(s.month))){
     goTo(+s.year,+s.month); // zum betroffenen Monat springen; rendert über das change-Ereignis
@@ -995,7 +1051,7 @@ function wireEntry(){
     } else if(st.hd){
       takeUndo(lbl);
       if(state.hd[k]===state.sel){ delete state.hd[k]; msg=`${who}: HD entfernt`; }
-      else { state.hd[k]=state.sel; msg=`${who}: HD ${fmtW(st.h)} h eingetragen`; }
+      else { state.hd[k]=state.sel; msg=`${who}: ${st.name} eingetragen`; }
     } else {
       takeUndo(lbl);
       const a=state.plan[k]||[];
@@ -1035,7 +1091,7 @@ function wireEntry(){
 
 /* Speichern */
 const KEY='stundenbewertung-v1';
-const SETTINGS=['year','month','w','vz','hfb','mbr','hfa','hd1','hd2','hd3','hue'];
+const SETTINGS=['year','month','w','vz','hfb','mbr','hfa','hd1','hd2','hd3','hue','eg','st'];
 function settingsObj(){ const settings={}; SETTINGS.forEach(i=>settings[i]=$(i).value); return settings; }
 const dataBody=()=>JSON.stringify({plan:state.plan,hd:state.hd,ue:state.ue,br:state.br});
 function dataJson(){ return JSON.stringify({settings:settingsObj(),plan:state.plan,hd:state.hd,ue:state.ue,br:state.br}); }
@@ -1059,6 +1115,10 @@ function applyData(d){
     if(el.tagName==='SELECT'){ el.value=v; continue; }
     const n=+v; if(Number.isFinite(n)&&n>=+el.min&&n<=+el.max) el.value=v; // Werte außerhalb des erlaubten Bereichs bleiben unverändert
   }
+  const ds=d.settings||{};
+  syncStufen(ds.st); // die Stufen hängen an der Entgeltgruppe
+  // Stand vor 2.9 (noch ohne Entgeltgruppe gespeichert): HD mit Abruf innerhalb von 96 Stunden zählt 3 h, nicht 4 (Änderungstarifvertrag, im Dienstplan „HD3“)
+  if(!('eg' in ds)&&+ds.hd2===4) $('hd2').value='3';
 }
 function save(force){
   if(!ready) return true;
@@ -1072,6 +1132,7 @@ function load(){
   let raw=null;
   try{ raw=localStorage.getItem(KEY); }catch(e){ stamp('Noch nichts gespeichert'); return; }
   if(!raw){ stamp('Noch nichts gespeichert'); return; }
+  hatBestand=true;
   try{
     const d=JSON.parse(raw); applyData(d); localSaved=d.saved||'';
     const t=d.saved?new Date(d.saved):null;
@@ -1194,8 +1255,8 @@ function render(){
   ['fb','kfb'].forEach(id=>T(id).h=Math.max(0,num('hfb',8)));
   T('kbr').h=Math.max(0,num('mbr',480)/60);
   T('fa').h=Math.max(0,num('hfa',7.8));
-  ['hd1','hd2','hd3'].forEach((id,i)=>{const t=T(id); t.h=Math.max(0,num(id,[2,4,6][i])); t.name=`HD ${fmtW(t.h)} h`; t.label=t.name; t.pill=`HD ${fmtW(t.h)}`; t.short=t.pill; t.mini=`HD${fmtW(t.h)}`;
-    const b=document.querySelector(`#hdSeg button[data-hd="${id}"]`); if(b) b.textContent=`${fmtW(t.h)} h`;});
+  ['hd1','hd2','hd3'].forEach((id,i)=>{const t=T(id); t.h=Math.max(0,num(id,[2,3,6][i])); const kurz=i?`HD${fmtW(t.h)}`:'HD'; t.name=`${kurz} (${fmtW(t.h)} h)`; t.label=t.name; t.pill=kurz; t.short=kurz; t.mini=kurz;
+    const b=document.querySelector(`#hdSeg button[data-hd="${id}"]`); if(b) b.textContent=kurz; const l=$(id+'K'); if(l) l.textContent=kurz; /* Kürzel in der Beschriftung der Tarifwerte */});
   ['w','vz','hfb','hfa','hd1','hd2','hd3'].forEach(id=>{ const el=$(id); $(id+'Err').textContent=el.validity.valid?'':`Ungültiger Wert. Erlaubt sind ${el.min} bis ${el.max}.`; });
   const hol=holidays(y), sp=special(y);
   const f=VZ/W;
@@ -1327,9 +1388,11 @@ function render(){
   $('undoData').hidden=!(undo&&(undo.label==='Import'||undo.label==='Alles löschen'));
   renderUe(y,m,f);
 
-  // Zuschlagsstunden: eigene Karte in der Auswertung, eigener Abschnitt im Rechenweg
+  // Zuschläge: eigene Karte in der Auswertung, eigener Abschnitt im Rechenweg; Beträge nur mit Entgeltgruppe und Stufe
+  const pay=entgelt(y,m,VZ), zx={pay,VZ,hdH:stdHD,hdTeile:rows.filter(r=>r.t.hd&&r.n).map(r=>({n:r.n,kurz:r.t.pill,name:r.t.name}))};
   const zu=zuschlag(y,m);
-  renderZu(zu,y,m);
+  renderZu(zu,y,m,zx);
+  renderPay(pay,y,m,VZ);
 
   // Jahr und Konto
   const yr=renderYear(y,m,W,VZ,f);
@@ -1342,30 +1405,35 @@ function render(){
   $('setNote').textContent=`24-h-Dienste, U, K statt Dienst und FA werden mit Vollzeit ÷ Höchstarbeitszeit bewertet, aktuell ${fmt(f*100,2)} %. FB und BR zählen 1:1, HD wird gesondert ausgewiesen. Die Minuten für Ü und BR stellst du beim Eintragen ein, direkt unter den Diensttypen.`;
   $('foot').textContent=`TV RD BAR § 6 Abs. 4 · Höchstarbeitszeit ${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · Feiertage Brandenburg, Soll ohne Feiertagsabzug · Version ${APP_VERSION}`;
 
-  last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD,zu};
+  last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD,zu,zx};
   syncLegend();
   $('how').textContent=buildText();
   save();
 }
-/* Zuschlagsstunden nach TV RD BAR § 8 Abs. 1, gezählt aus den 24-h-Diensten. Nur Stunden, keine Beträge.
+/* Zuschläge nach TV RD BAR § 8 Abs. 1, gezählt aus den 24-h-Diensten. zuschlag() liefert nur Stunden; die Beträge kommen in zuTexte() dazu, wenn Entgeltgruppe und Stufe gewählt sind.
    Ein Dienst läuft von ZB Uhr bis ZB Uhr am Folgetag; für Zuschläge zählen alle 24 Stunden (§ 6 Abs. 4, Protokollerklärung Nr. 2).
-   Nacht: 20 bis 6 Uhr (§ 7 Abs. 5). Von Feiertag, 24.12./31.12. (ab 6 Uhr) und Sonntag zählt je Stunde nur der höchste Zuschlag (§ 8 Abs. 1 Satz 3):
-   Feiertag vor 24.12./31.12. vor Sonntag. Nacht kommt immer dazu.
+   Nacht: 20 bis 6 Uhr (§ 7 Abs. 5). Von Feiertag, 24.12./31.12. (ab 6 Uhr), Sonntag und Samstag (13 bis 21 Uhr) zählt je Stunde nur der höchste Zuschlag
+   (§ 8 Abs. 1 Satz 3): Feiertag vor 24.12./31.12. vor Sonntag und Samstag. Nacht kommt immer dazu.
+   Samstag (seit 2.8): Den Zuschlag gibt es laut § 8 Abs. 1 Buchst. f nur, wenn die Arbeit nicht im Rahmen von Wechselschicht- oder Schichtarbeit anfällt.
+   Für die 24-h-Dienste wird er gezahlt (Abrechnung März 2026: „ZS Samstag“, 8 h je Samstagsdienst), eine Wechselschicht- oder Schichtzulage gibt es dort nicht.
+   An drei Abrechnungen geprüft: 10 Nachtstunden je Dienst, Sonntag 17 h und 7 h, Samstag 8 h, Teilung an der Monatsgrenze (Dienst am 31.3.2026), Zahlung zwei Monate später.
    Gezählt wird nach Kalendertag: Die Stunden nach Mitternacht gehören zum Folgetag, am Monatsende also zum nächsten Monat. */
 const ZB=7; // Dienstbeginn des 24-h-Dienstes (Uhr)
 function zuschlag(y,m){
   const ov=(a,b,c,d)=>Math.max(0,Math.min(b,d)-Math.max(a,c)); // gemeinsame Stunden zweier Zeitspannen am selben Tag
   const hol=holidays(y), sp=special(y);
   const nacht=(a,b)=>ov(a,b,0,6)+ov(a,b,20,24);
-  const z={n:0,voll:0,nacht:0,so:0,ft:0,vf:0,nA:nacht(ZB,24),nB:nacht(0,ZB),tage:[],rein:null,raus:null,uhr:[]};
+  const z={n:0,voll:0,nacht:0,sa:0,so:0,ft:0,vf:0,nA:nacht(ZB,24),nB:nacht(0,ZB),sA:ov(ZB,24,13,21),tage:[],rein:null,raus:null,uhr:[]}; // nA, nB: Nachtstunden am Tag des Beginns und am Folgetag; sA: Samstagsstunden eines Dienstes, der am Samstag beginnt
   const dim=new Date(y,m+1,0).getDate(), by={};
   const part=(dt,a,b)=>{ // die Stunden von a bis b Uhr am Kalendertag dt (liegt immer im gezeigten Monat)
     const d=dt.getDate(), k=key(y,m,d), sun=dt.getDay()===0, hn=hol[k], vn=sp[k];
-    const e=by[d]||(by[d]={d,so:0,ft:0,vf:0,name:'',sun});
+    const e=by[d]||(by[d]={d,sa:0,so:0,ft:0,vf:0,name:'',sun,weg:0}); // weg: Samstagsstunden, die ein höherer Zuschlag verdrängt
+    const s=dt.getDay()===6?ov(a,b,13,21):0; // Samstag zählt nur von 13 bis 21 Uhr
     z.nacht+=nacht(a,b);
-    if(hn){ e.ft+=b-a; e.name=hn; }
-    else if(vn){ e.vf+=ov(a,b,6,24); e.name=vn; if(sun) e.so+=ov(a,b,0,6); }
+    if(hn){ e.ft+=b-a; e.name=hn; e.weg+=s; }
+    else if(vn){ e.vf+=ov(a,b,6,24); e.name=vn; e.weg+=s; if(sun) e.so+=ov(a,b,0,6); }
     else if(sun) e.so+=b-a;
+    else e.sa+=s;
   };
   for(let i=0;i<=dim;i++){ // i=0 ist der letzte Tag des Vormonats: Sein Dienst läuft in diesen Monat hinein
     const d0=new Date(y,m,i), d1=new Date(y,m,i+1);
@@ -1375,57 +1443,116 @@ function zuschlag(y,m){
     // Nacht der Zeitumstellung (letzter Sonntag im März und im Oktober): Der Dienst ist dann 23 oder 25 Stunden lang, gerechnet wird trotzdem mit 24
     if(i>0&&i<dim&&(m===2||m===9)&&d1.getDay()===0&&d1.getDate()+7>dim) z.uhr.push({d:i,so:d1.getDate(),vor:m===2});
   }
-  z.tage=Object.values(by).filter(e=>e.so||e.ft||e.vf).sort((a,b)=>a.d-b.d);
-  for(const e of z.tage){ z.so+=e.so; z.ft+=e.ft; z.vf+=e.vf; }
+  z.tage=Object.values(by).filter(e=>e.sa||e.so||e.ft||e.vf).sort((a,b)=>a.d-b.d);
+  for(const e of z.tage){ z.sa+=e.sa; z.so+=e.so; z.ft+=e.ft; z.vf+=e.vf; }
   z.any=z.n>0||!!z.rein;
   return z;
 }
-function zuTexte(z,y,m){ // Wortlaut für die Karte (rows, pay, lines) und für den Rechenweg (how)
-  if(!z.any) return {lead:`Im ${MONATE[m]} ist kein 24-h-Dienst eingetragen. Die App zählt Zuschlagsstunden nur aus 24-h-Diensten.`,rows:[],pay:'',lines:[],how:['Zuschlagsstunden: kein 24-h-Dienst eingetragen']};
-  const h=x=>fmtW(x)+' h', nm=(m+1)%12, pay=new Date(y,m+2,1), payT=`${MONATE[pay.getMonth()]} ${pay.getFullYear()}`;
-  const so=z.tage.filter(e=>e.so), ft=z.tage.filter(e=>e.ft), vf=z.tage.filter(e=>e.vf);
-  const soT=so.map(e=>`${e.d}. (${h(e.so)})`).join(', '), ftT=ft.map(e=>`${e.name} am ${e.d}. (${h(e.ft)})`).join(', '), vfT=vf.map(e=>`${e.name} (${h(e.vf)})`).join(', ');
-  const sum=(n,x)=>n>1?`, zusammen ${h(x)}`:'';
+/* Entgelt (seit 2.9): Tabellenentgelt in Cent je Entgeltgruppe und Stufe, je Stufe [ab 01.04.2025, ab 01.05.2026]. Quelle: Entgelttabellen des Arbeitgebers.
+   Stundensatz nach § 24 Abs. 3: Tabellenentgelt ÷ (4,348 × Wochenarbeitszeit), auf Cent gerundet. Maßgebend ist der Monat, in dem gearbeitet wurde.
+   Geprüft an den Abrechnungen März bis Mai 2026 (EG N, Stufe 5: 24,37 €). null: Wert liegt nicht vor (EG 6 ab 01.05.2026 fehlt in der Vorlage). */
+const ENTGELT={
+  N:{name:'Notfallsanitäter',st:{'2':[360040,370122],'3':[375759,386280],'4':[396458,407559],'5':[413221,424792],'6':[436670,448897],'6a':[441892,454265]}},
+  '4':{name:'Rettungssanitäter',st:{'1':[297708,306044],'2':[317240,326123],'3':[333629,342970],'4':[343831,353458],'5':[354032,363945],'6':[360007,370087],'6a':[359760,369833],'6b':[364197,374395]}},
+  '6':{name:'Rettungsassistent',st:{'1':[315204,null],'2':[334655,null],'3':[348294,null],'4':[361792,null],'5':[375049,null],'6':[381926,null],'6a':[382043,null],'6b':[383531,null],'6c':[386875,null],'6d':[404292,null]}}
+};
+const ENTGELT_AB=[{y:2025,m:3,t:'01.04.2025'},{y:2026,m:4,t:'01.05.2026'}]; // gültig ab Jahr und Monat (Januar = 0)
+const UMKL=12; // Umkleidezeit in Minuten je geleistetem Dienst (§ 8 Abs. 5)
+const fmtE=c=>fmt(c/100)+' €'; // Betrag in Cent als Euro
+function syncStufen(want){ // bietet die Stufen der gewählten Entgeltgruppe an; die bisherige Stufe bleibt, wenn es sie dort gibt
+  const eg=$('eg'), st=$('st'); if(eg.selectedIndex<0) eg.value='';
+  const g=ENTGELT[eg.value], keep=want!==undefined?String(want):st.value;
+  st.innerHTML='<option value="">Nicht gewählt</option>'+(g?Object.keys(g.st).map(k=>`<option value="${k}">Stufe ${k}</option>`).join(''):'');
+  st.value=g&&g.st[keep]?keep:''; st.disabled=!g;
+}
+function entgelt(y,m,VZ){ // Tabellenentgelt (T) und Stundensatz (c), beides in Cent, für den Monat der Arbeit; null ohne Auswahl
+  const g=ENTGELT[$('eg').value], row=g&&g.st[$('st').value]; if(!row) return null;
+  let i=-1; ENTGELT_AB.forEach((a,j)=>{ if(y>a.y||(y===a.y&&m>=a.m)) i=j; });
+  const T=i<0?null:row[i];
+  return {eg:$('eg').value,st:$('st').value,name:g.name,ab:i<0?'':ENTGELT_AB[i].t,T,c:T==null?null:Math.round(T/(4.348*VZ))};
+}
+function renderPay(p,y,m,VZ){ // Hinweis unter der Auswahl in den Einstellungen
+  $('payNote').textContent=!p?($('eg').value?'Bitte noch die Stufe wählen.':'Ohne Auswahl zeigt die App bei den Zuschlägen nur Stunden.')
+    :p.c==null?`Für Entgeltgruppe ${p.eg} liegt die Tabelle ab ${p.ab} noch nicht vor. Für ${MONATE[m]} ${y} gibt es deshalb keine Beträge.`
+    :`Stundensatz im ${MONATE[m]} ${y}: ${fmtE(p.c)}. Das ist das Tabellenentgelt ${fmtE(p.T)} (Tabelle ab ${p.ab}) geteilt durch 4,348 × ${fmtW(VZ)} h.`;
+}
+function zuTexte(z,y,m,x){ // Wortlaut für die Karte (rows, sum, pay, lines) und für den Rechenweg (how). x: Entgelt (pay), Wochenstunden (VZ), HD-Stunden (hdH) und ihre Teile (hdTeile)
+  const p=x.pay, c=p&&p.c!=null?p.c:null;
+  const eur=(std,pct)=>c==null?null:Math.round(Math.round(std*100)*c*pct/10000); // Cent. Wie auf der Abrechnung: erst der gerundete Stundensatz, dann Stunden × Satz × Prozent, gerundet
+  if(!z.any&&!x.hdH) return {lead:`Im ${MONATE[m]} ist weder ein 24-h-Dienst noch ein HD eingetragen.`,rows:[],sum:null,pay:'',lines:[],how:['Zuschläge: weder 24-h-Dienst noch HD eingetragen']};
+  const h=v=>fmtW(v)+' h', nm=(m+1)%12, pd=new Date(y,m+2,1), payT=`${MONATE[pd.getMonth()]} ${pd.getFullYear()}`;
+  const sa=z.tage.filter(e=>e.sa), so=z.tage.filter(e=>e.so), ft=z.tage.filter(e=>e.ft), vf=z.tage.filter(e=>e.vf);
+  const saT=sa.map(e=>`${e.d}. (${h(e.sa)})`).join(', '), soT=so.map(e=>`${e.d}. (${h(e.so)})`).join(', '), ftT=ft.map(e=>`${e.name} am ${e.d}. (${h(e.ft)})`).join(', '), vfT=vf.map(e=>`${e.name} (${h(e.vf)})`).join(', ');
+  const sum=(n,v)=>n>1?`, zusammen ${h(v)}`:'';
   const nf=[z.voll?`${z.voll} × ${h(z.nA+z.nB)}`:'',z.raus?h(z.nA):'',z.rein?h(z.nB):''].filter(Boolean).join(' + '); // Nachtstunden: ganze Dienste, dazu die Teile an den Monatsgrenzen
-  const rows=[['Nacht','20 bis 6 Uhr, 20 %',z.nacht],['Sonntag','0 bis 24 Uhr, 25 %',z.so],['Feiertag','0 bis 24 Uhr, 35 % mit und 135 % ohne Freizeitausgleich',z.ft]];
-  if(z.vf) rows.push(['24.12. und 31.12.','ab 6 Uhr, 35 %',z.vf]);
+  const uh=z.n*UMKL/60, hdT=x.hdTeile.map(t=>`${t.n} × ${t.name}`).join(' + ');
+  const rows=[]; // je Zeile: Name, Unterzeile, Stunden, Prozent, Betrag in Cent (oder null)
+  if(z.any){
+    rows.push(['Nacht','20 bis 6 Uhr, 20 %',z.nacht,20],['Samstag','13 bis 21 Uhr, 20 %',z.sa,20],['Sonntag','0 bis 24 Uhr, 25 %',z.so,25],['Feiertag','0 bis 24 Uhr, 35 % mit Freizeitausgleich, sonst 135 %',z.ft,35]);
+    if(z.vf) rows.push(['24.12. und 31.12.','ab 6 Uhr, 35 %',z.vf,35]);
+  }
+  if(z.n) rows.push(['Umkleidezeiten',`${UMKL} Minuten je 24-h-Dienst, 100 %`,uh,100]);
+  if(x.hdH) rows.push(['HD-Dienst',`${x.hdTeile.map(t=>`${t.n} × ${t.kurz}`).join(', ')}, 100 %`,x.hdH,100]);
+  rows.forEach(r=>r.push(eur(r[2],r[3])));
+  const total=c==null?null:rows.reduce((a,r)=>a+r[4],0);
   const L=[];
-  L.push(`Ein 24-h-Dienst läuft von ${ZB} Uhr bis ${ZB} Uhr am nächsten Tag. Für Zuschläge zählen alle 24 Stunden, nicht nur die bewerteten.`);
-  L.push(`Nacht ist von 20 bis 6 Uhr, das sind ${h(z.nA+z.nB)} je Dienst. In diesem Monat: ${nf}${nf===h(z.nacht)?'':' = '+h(z.nacht)}. Nachtstunden zählen immer zusätzlich, auch an Sonntagen und Feiertagen.`);
-  if(z.rein) L.push(`Der Dienst vom ${z.rein.d}.${z.rein.m+1}. lief bis zum 1.${m+1}. um ${ZB} Uhr. Diese ${h(ZB)} zählen im ${MONATE[m]}, davon ${h(z.nB)} Nacht.`);
-  if(z.raus) L.push(`Der Dienst am ${z.raus.d}.${m+1}. läuft bis zum 1.${nm+1}. um ${ZB} Uhr. Die ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}, im ${MONATE[m]} bleiben ${h(z.nA)} Nacht.`);
-  if(so.length||ft.length) L.push(`Sonntage und Feiertage zählen von 0 bis 24 Uhr: ${h(24-ZB)}, wenn der Dienst an dem Tag beginnt, und ${h(ZB)}, wenn er dort endet.`);
-  else L.push('In diesem Monat berührt kein Dienst einen Sonntag oder Feiertag.');
-  if(so.length) L.push(`Sonntag: ${soT}${sum(so.length,z.so)}.`);
-  if(ft.length) L.push(`Feiertag: ${ftT}${sum(ft.length,z.ft)}.`);
-  if(vf.length) L.push(`Am 24.12. und 31.12. gilt der Zuschlag erst ab 6 Uhr: ${vfT}${sum(vf.length,z.vf)}.`);
-  if(z.tage.some(e=>e.ft&&e.sun)) L.push('Fällt ein Feiertag auf einen Sonntag, zählt nur der Feiertag, weil sein Zuschlag höher ist.');
-  if(z.tage.some(e=>e.vf&&e.sun)) L.push('Fällt der 24.12. oder 31.12. auf einen Sonntag, zählt ab 6 Uhr nur der Zuschlag für diesen Tag, weil er höher ist.');
-  for(const u of z.uhr) L.push(`In der Nacht zum ${u.so}.${m+1}. wird die Uhr ${u.vor?'vorgestellt':'zurückgestellt'}. Der Dienst vom ${u.d}.${m+1}. ${u.vor?'ist deshalb eine Stunde kürzer':'dauert deshalb eine Stunde länger'}. Die App rechnet trotzdem mit 24 Stunden, der Lohnzettel kann um eine Stunde abweichen.`);
-  L.push('Nicht dabei: Überstunden, Fortbildung, Betriebsrat und Hintergrunddienst, weil die App dafür keine Uhrzeit kennt. Für Urlaub und Krank zahlt der Arbeitgeber den Durchschnitt der letzten drei vollen Monate (§ 21). Den Samstagszuschlag (13 bis 21 Uhr) gibt es laut TV nicht bei Wechselschicht- oder Schichtarbeit.');
-  L.push('Grundlage: TV RD BAR § 8 Abs. 1, § 7 Abs. 5 und § 6 Abs. 4 mit Protokollerklärung Nr. 2.');
-  const how=['Zuschlagsstunden (TV RD BAR § 8 Abs. 1)',`24-h-Dienst ${ZB}–${ZB} Uhr, alle 24 h zählen`];
-  how.push(`Nacht (20–6 Uhr): ${nf} = ${fmt(z.nacht)} h`);
-  how.push(`Sonntag:          ${so.length?soT+' = ':''}${fmt(z.so)} h`);
-  how.push(`Feiertag:         ${ft.length?ftT+' = ':''}${fmt(z.ft)} h`);
-  if(vf.length) how.push(`24.12./31.12. ab 6 Uhr: ${vfT} = ${fmt(z.vf)} h`);
-  if(z.rein) how.push(`Dienst vom ${z.rein.d}.${z.rein.m+1}.: ${h(ZB)} nach Mitternacht zählen hier`);
-  if(z.raus) how.push(`Dienst vom ${z.raus.d}.${m+1}.: ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}`);
-  for(const u of z.uhr) how.push(`Zeitumstellung am ${u.so}.${m+1}.: Dienst vom ${u.d}.${m+1}. eine Stunde ${u.vor?'kürzer':'länger'}, gerechnet mit 24 h`);
-  how.push('Je Stunde nur der höchste von Feiertag, 24.12./31.12., Sonntag');
-  how.push('Nacht zählt zusätzlich');
+  if(z.any){
+    L.push(`Ein 24-h-Dienst läuft von ${ZB} Uhr bis ${ZB} Uhr am nächsten Tag. Für Zuschläge zählen alle 24 Stunden, nicht nur die bewerteten.`);
+    L.push(`Nacht ist von 20 bis 6 Uhr, das sind ${h(z.nA+z.nB)} je Dienst. In diesem Monat: ${nf}${nf===h(z.nacht)?'':' = '+h(z.nacht)}. Nachtstunden zählen immer zusätzlich, auch an Sonntagen und Feiertagen.`);
+    if(z.rein) L.push(`Der Dienst vom ${z.rein.d}.${z.rein.m+1}. lief bis zum 1.${m+1}. um ${ZB} Uhr. Diese ${h(ZB)} zählen im ${MONATE[m]}, davon ${h(z.nB)} Nacht.`);
+    if(z.raus) L.push(`Der Dienst am ${z.raus.d}.${m+1}. läuft bis zum 1.${nm+1}. um ${ZB} Uhr. Die ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}, im ${MONATE[m]} bleiben ${h(z.nA)} Nacht.`);
+    L.push(`Samstag zählt nur von 13 bis 21 Uhr: ${h(z.sA)}, wenn der Dienst am Samstag beginnt.`);
+    if(sa.length) L.push(`Samstag: ${saT}${sum(sa.length,z.sa)}.`);
+    L.push(`Sonntage und Feiertage zählen von 0 bis 24 Uhr: ${h(24-ZB)}, wenn der Dienst an dem Tag beginnt, und ${h(ZB)}, wenn er dort endet.`);
+    if(so.length) L.push(`Sonntag: ${soT}${sum(so.length,z.so)}.`);
+    if(ft.length) L.push(`Feiertag: ${ftT}${sum(ft.length,z.ft)}.`);
+    if(vf.length) L.push(`Am 24.12. und 31.12. gilt der Zuschlag erst ab 6 Uhr: ${vfT}${sum(vf.length,z.vf)}.`);
+    if(z.tage.some(e=>e.ft&&(e.sun||e.weg))) L.push('Fällt ein Feiertag auf einen Samstag oder Sonntag, zählt nur der Feiertag, weil sein Zuschlag höher ist.');
+    if(z.tage.some(e=>e.vf&&(e.sun||e.weg))) L.push('Fällt der 24.12. oder 31.12. auf einen Samstag oder Sonntag, zählt ab 6 Uhr nur der Zuschlag für diesen Tag, weil er höher ist.');
+    for(const u of z.uhr) L.push(`In der Nacht zum ${u.so}.${m+1}. wird die Uhr ${u.vor?'vorgestellt':'zurückgestellt'}. Der Dienst vom ${u.d}.${m+1}. ${u.vor?'ist deshalb eine Stunde kürzer':'dauert deshalb eine Stunde länger'}. Die App rechnet trotzdem mit 24 Stunden, der Lohnzettel kann um eine Stunde abweichen.`);
+  }
+  if(z.n) L.push(`Umkleidezeiten: ${UMKL} Minuten je geleistetem 24-h-Dienst, hier ${z.n} × ${h(UMKL/60)} = ${h(uh)}.`);
+  if(x.hdH) L.push(`HD-Dienst: ${hdT} = ${h(x.hdH)}.`);
+  if(c!=null){
+    L.push(`Beträge: Der Stundensatz ist ${fmtE(c)}. Das ist das Tabellenentgelt ${fmtE(p.T)} (${p.name}, Stufe ${p.st}, Tabelle ab ${p.ab}) geteilt durch 4,348 × ${fmtW(x.VZ)} h. Je Zeile gilt Stunden × Stundensatz × Prozentsatz, auf Cent gerundet und brutto.`);
+    if(z.ft) L.push(`Feiertag ist mit 35 % gerechnet, also mit Freizeitausgleich. Ohne Freizeitausgleich sind es 135 %, das wären ${fmtE(eur(z.ft,135))}.`);
+  } else if(p) L.push(`Für Entgeltgruppe ${p.eg} liegt die Tabelle ab ${p.ab} noch nicht vor, deshalb fehlen die Beträge.`);
+  L.push('Nicht dabei: Zuschläge auf Überstunden, Fortbildung und Betriebsrat, weil die App dafür keine Uhrzeit kennt. Für Urlaub und Krank gibt es laut § 21 den Durchschnitt der letzten drei vollen Monate.');
+  L.push('Grundlage: TV RD BAR § 8 Abs. 1, 5 und 6, § 7 Abs. 5, § 6 Abs. 4 mit Protokollerklärung Nr. 2 und § 24 Abs. 3.');
+  const E=(std,pct)=>c==null||!std?'':` × ${fmtE(c)}${pct===100?'':` × ${pct} %`} = ${fmtE(eur(std,pct))}`; // Rechnung hinter der Stundenzeile: Stunden × Stundensatz × Prozentsatz
+  const how=['Zuschläge (TV RD BAR § 8)'];
+  if(c!=null) how.push(`Stundensatz: ${fmtE(p.T)} ÷ (4,348 × ${fmtW(x.VZ)}) = ${fmtE(c)} (EG ${p.eg}, Stufe ${p.st}, Tabelle ab ${p.ab})`);
+  if(z.any){
+    how.push(`24-h-Dienst ${ZB}–${ZB} Uhr, alle 24 h zählen`);
+    how.push(`Nacht (20–6 Uhr): ${nf} = ${fmt(z.nacht)} h${E(z.nacht,20)}`);
+    how.push(`Samstag (13–21):  ${sa.length?saT+' = ':''}${fmt(z.sa)} h${E(z.sa,20)}`);
+    how.push(`Sonntag:          ${so.length?soT+' = ':''}${fmt(z.so)} h${E(z.so,25)}`);
+    how.push(`Feiertag:         ${ft.length?ftT+' = ':''}${fmt(z.ft)} h${E(z.ft,35)}`);
+    if(vf.length) how.push(`24.12./31.12. ab 6 Uhr: ${vfT} = ${fmt(z.vf)} h${E(z.vf,35)}`);
+    if(z.rein) how.push(`Dienst vom ${z.rein.d}.${z.rein.m+1}.: ${h(ZB)} nach Mitternacht zählen hier`);
+    if(z.raus) how.push(`Dienst vom ${z.raus.d}.${m+1}.: ${h(ZB)} nach Mitternacht zählen im ${MONATE[nm]}`);
+    for(const u of z.uhr) how.push(`Zeitumstellung am ${u.so}.${m+1}.: Dienst vom ${u.d}.${m+1}. eine Stunde ${u.vor?'kürzer':'länger'}, gerechnet mit 24 h`);
+  }
+  if(z.n) how.push(`Umkleidezeiten:   ${z.n} × ${h(UMKL/60)} = ${fmt(uh)} h${E(uh,100)}`);
+  if(x.hdH) how.push(`HD-Dienst:        ${hdT} = ${fmt(x.hdH)} h${E(x.hdH,100)}`);
+  if(c!=null) how.push(`Summe:            ${fmtE(total)} brutto`);
+  if(z.any){ how.push('Je Stunde nur der höchste von Feiertag, 24.12./31.12., Sonntag, Samstag'); how.push('Nacht zählt zusätzlich'); }
   how.push(`Abrechnung laut § 24 Abs. 1: ${payT}`);
-  return {lead:'Stunden aus deinen 24-h-Diensten, für die es laut TV RD BAR einen Zuschlag gibt. Zum Vergleich mit dem Lohnzettel.',rows,
+  return {lead:c==null?'Stunden aus deinen Diensten, zum Vergleich mit dem Lohnzettel.':'Stunden und Beträge aus deinen Diensten, zum Vergleich mit dem Lohnzettel.',rows,sum:total,
     pay:`Laut TV werden Zuschläge zwei Monate später gezahlt (§ 24 Abs. 1). Die Stunden aus ${MONATE[m]} stehen dann auf der Abrechnung für ${payT}.`,lines:L,how};
 }
-function renderZu(z,y,m){
-  const t=zuTexte(z,y,m);
-  // geschütztes Leerzeichen, damit am Zeilenende nichts auseinanderfällt: Zahl und Einheit („17 h“, „35 %“, „7 Uhr“), Paragraf und Absatz („§ 24 Abs. 1“), „Nr. 2“
-  const nb=s=>s.replace(/(\d) (?=(?:h|Uhr)(?![a-zäöü])|%)/g,'$1\u00a0').replace(/§ (?=\d)/g,'§\u00a0').replace(/(\d) Abs\. (?=\d)/g,'$1\u00a0Abs.\u00a0').replace(/Nr\. (?=\d)/g,'Nr.\u00a0');
+function renderZu(z,y,m,x){
+  const t=zuTexte(z,y,m,x), show=z.any||!!x.hdH;
+  // geschütztes Leerzeichen, damit am Zeilenende nichts auseinanderfällt: Zahl und Einheit („17 h“, „35 %“, „7 Uhr“, „24,37 €“), Paragraf und Absatz („§ 24 Abs. 1“), „Nr. 2“
+  const nb=s=>s.replace(/(\d) (?=(?:h|Uhr)(?![a-zäöü])|%|€)/g,'$1 ').replace(/§ (?=\d)/g,'§ ').replace(/(\d) Abs\. (?=\d)/g,'$1 Abs. ').replace(/Nr\. (?=\d)/g,'Nr. ');
   $('zuMonth').textContent=`${MONATE[m]} ${y}`;
   $('zuLead').textContent=t.lead;
-  $('zuList').hidden=!z.any; $('zuPay').hidden=!z.any; $('dZu').hidden=!z.any;
-  $('zuList').innerHTML=t.rows.map(([n,s,v])=>`<div class="${v?'':'null'}"><dt>${n} <span class="zs">${nb(s)}</span></dt><dd>${fmt(v)} h</dd></div>`).join('');
+  // ohne Entgeltgruppe: Weg zu den Einstellungen anbieten; mit Entgeltgruppe, aber ohne Tabelle: sagen, warum Beträge fehlen
+  const p=x.pay; $('zuEg').hidden=!show||!!(p&&p.c!=null); $('zuEgB').hidden=!!p;
+  $('zuEgT').textContent=!p?'Für Beträge in Euro:':`Für Entgeltgruppe ${p.eg} liegt die Tabelle ab ${p.ab} noch nicht vor, deshalb fehlen die Beträge.`;
+  $('zuList').hidden=!show; $('zuPay').hidden=!show; $('dZu').hidden=!show;
+  $('zuList').innerHTML=t.rows.map(([n,s,v,pc,e])=>`<div class="${v?'':'null'}"><dt>${n} <span class="zs">${nb(s)}</span></dt><dd>${fmt(v)} h${e!=null&&v?` <span class="ze">${nb(fmtE(e))}</span>`:''}</dd></div>`).join('')
+    +(t.sum!=null?`<div class="sum"><dt>Summe <span class="zs">brutto</span></dt><dd>${nb(fmtE(t.sum))}</dd></div>`:'');
   $('zuPay').textContent=nb(t.pay);
   $('zuLines').innerHTML=t.lines.map(s=>`<p class="sub">${esc(nb(s))}</p>`).join('');
 }
@@ -1526,7 +1653,7 @@ function buildText(){
   lines.push(`Saldo voll:     ${sgn(L.istVoll-L.sollVoll)} h`);
   lines.push(`Saldo bewertet: ${sgn(L.saldo)} h`);
   lines.push(`→ ${L.nAny?verdict(L.saldo,m):'Noch nichts eingetragen.'}`);
-  lines.push('',...zuTexte(L.zu,L.y,m).how);
+  lines.push('',...zuTexte(L.zu,L.y,m,L.zx).how);
   return lines.join('\n');
 }
 /* App-Rahmen: Bereiche (Monat, Auswertung, Jahr, Einstellungen) und Darstellung (hell oder dunkel).
@@ -1614,8 +1741,28 @@ function initInstall(){
   if(os==='android') window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; offer(true); });
   window.addEventListener('appinstalled',()=>{ installEvt=null; offer(false); hideTip(); });
 }
+/* „Was ist neu“ (seit 2.9): Die Liste der Änderungen steht in den Einstellungen. Nach einem Update zeigt ein Hinweis einmal darauf.
+   Gemerkt je Gerät unter eigenem Schlüssel (gehört nicht zu den Diensten und nicht in die Sicherung). Wer die App zum ersten Mal öffnet, bekommt keinen Hinweis. */
+const VER_KEY='stundenbewertung-version';
+function zeige(id,fokus){ // Einstellungen öffnen und zur Karte mit dieser id rollen, unter die feste Leiste
+  setView('einstellungen');
+  const e=$(id), bar=$('bar'); if(!e) return;
+  window.scrollTo(0,Math.max(0,e.getBoundingClientRect().top+window.scrollY-(bar?bar.getBoundingClientRect().height:0)-10));
+  if(fokus&&$(fokus)){ try{ $(fokus).focus({preventScroll:true}); }catch(_){} }
+}
+function initNeu(){
+  const ver=APP_VERSION.split(' ')[0], note=$('neuNote');
+  const merken=()=>{ note.hidden=true; try{ localStorage.setItem(VER_KEY,ver); }catch(e){} };
+  let seen=null, ok=true; try{ seen=localStorage.getItem(VER_KEY); }catch(e){ ok=false; }
+  if(ok){ if(seen===null?hatBestand:seen!==ver) note.hidden=false; else if(seen===null) merken(); } // ohne Merker: nur wer schon Daten hat, kommt von einer älteren Version
+  $('neuShow').addEventListener('click',()=>{ merken(); zeige('news'); });
+  $('neuClose').addEventListener('click',merken);
+  $('neuLink').addEventListener('click',()=>zeige('news'));
+  $('zuEgB').addEventListener('click',()=>zeige('payCard','eg'));
+}
 initShell(); // zuerst der Rahmen: Bereiche und Darstellung hängen nicht an den Daten
 init();
+initNeu(); // nach dem Laden: braucht hatBestand
 initCloud();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
 </script>
