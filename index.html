@@ -107,6 +107,25 @@ button.act.link:active:not(:disabled){background:none;opacity:.7}
 .bar .chip .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .bar .chip .v:empty::before{content:"–";color:var(--muted)}
 .toptabs{display:none}
+/* Hinweis im Kopf: als App aufs Handy holen. Nur im Browser, ausblendbar; als installierte App entfällt der ganze Kopf. */
+.top .hintwrap{display:block}
+.install{max-width:560px;margin:10px 0 6px;background:var(--sunken);border:1px solid var(--line);border-radius:12px;padding:3px 3px 3px 12px}
+.irow{display:flex;align-items:center;gap:6px;min-height:44px}
+.itxt{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;font-size:14px;line-height:1.25;font-weight:600;color:var(--ink)}
+.itxt svg,.isteps .glyph{fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.itxt svg{width:20px;height:20px;flex:none;color:var(--muted)}
+.install .act{min-height:40px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.iclose{width:40px;height:40px;flex:none;border:0;background:none;color:var(--muted);font:400 24px/1 var(--sans);border-radius:10px;cursor:pointer;touch-action:manipulation;padding:0}
+.iclose:active{background:var(--line)}
+.isteps{font-size:14px;color:var(--ink)}
+.install .isteps{padding:2px 10px 10px 0}
+.getapp .isteps{margin-top:6px;padding-top:4px;border-top:1px solid var(--line)}
+.isteps h3{font-size:14px;line-height:1.3;font-weight:700;margin:10px 0 4px}
+.isteps ol{margin:0;padding-left:1.35em;display:grid;gap:4px}
+.isteps .glyph{width:17px;height:17px;vertical-align:-3px}
+.isteps .sub{margin-top:8px;font-size:13px}
+#installSteps[data-os="ios"] .os-android,#installSteps[data-os="android"] .os-ios{display:none}
+.app .top,.app .getapp,.noinstall .install,.noinstall .getapp{display:none}
 .pickrow{position:absolute;top:calc(100% + 6px);left:var(--pad);right:var(--pad);max-width:420px;z-index:6;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:end;box-shadow:0 14px 34px rgba(8,20,35,.2)}
 .pickrow label{flex:1 1 120px}
 
@@ -200,6 +219,7 @@ main{display:flex;flex-direction:column;gap:16px;padding-top:16px;padding-bottom
   .day:not(.empty):hover{box-shadow:inset 0 0 0 2px var(--ctrl-line)}
   .pick:hover,.bar .nav:hover:not(:disabled),.bar .title:hover,button.act:hover:not(:disabled):not(.primary):not(.link):not([data-sure]){background:var(--line)}
   .ttab:hover{background:var(--sunken);color:var(--ink)}
+  .iclose:hover{background:var(--line);color:var(--ink)}
   #lookSeg button[aria-pressed="false"]:hover{background:var(--line)}
   .pick[aria-pressed="true"]:hover{background:var(--pc,var(--muted))}
   .pick.eraser[aria-pressed="true"]:hover{background:var(--bad)}
@@ -298,7 +318,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 .yh{display:flex;flex-direction:column;gap:1px;min-width:0;margin-bottom:8px}
 
 /* Einstellungen: Darstellung, Tarifwerte, Daten */
-.prefs{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.prefs,.pcol{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
 .lookrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
 .lookrow .sub{margin-top:2px}
 #lookSeg button{min-height:44px;min-width:92px;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-weight:600}
@@ -331,7 +351,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   body[data-view="auswertung"] .over,body[data-view="auswertung"] .entry{display:none}
 }
 @media print{ body .tabbar,body .toptabs{display:none} body .bar{position:static} }
-@media (display-mode:standalone){ .top{display:none} } /* als installierte App: die Monatsleiste ist die Kopfzeile, der Titel steht schon unter dem App-Symbol */
+@media (display-mode:standalone){ .top,.getapp{display:none} } /* als installierte App: die Monatsleiste ist die Kopfzeile, der Titel steht schon unter dem App-Symbol */
 
 @media (min-width:620px){
   details.dt>summary h2,.yh{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:2px 12px}
@@ -344,10 +364,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .ttab{height:40px;padding:0 14px;border:0;border-radius:10px;background:none;color:var(--muted);font:600 14.5px/1 var(--sans);cursor:pointer;touch-action:manipulation}
   .ttab[aria-current="page"]{background:var(--sunken);color:var(--ink)}
   .ttab:active{background:var(--line)}
-  .prefs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;align-items:start}
-  .prefs .look{grid-column:1;grid-row:1}
-  .prefs #dSettings{grid-column:1;grid-row:2}
-  .prefs .data{grid-column:2;grid-row:1/span 2}
+  .prefs{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}
   .work{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);grid-template-rows:auto 1fr auto}
   .entry{grid-column:1;grid-row:1/span 2}
   .over{grid-column:2;grid-row:1}
@@ -373,9 +390,12 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .top .wrap{gap:9px}
   .logo{width:28px;height:28px}
   .top h1{font-size:17px}
-  .top .sub{display:none} /* am Handy schlanker Kopf wie in einer App; die Erklärung steht bei „Dienste eintragen“ */
+  .top h1+.sub{display:none} /* am Handy schlanker Kopf wie in einer App; die Erklärung steht bei „Dienste eintragen“ */
   #lookSeg{display:flex;width:100%}
   #lookSeg button{flex:1 1 0}
+  .install{margin-top:8px}
+  .getapp .row{width:100%}
+  .getapp .row .act{flex:1 1 auto}
   .bar .nav{width:42px}
   .bar .title{font-size:16px;padding:0 2px}
   .bar .chip{min-width:84px;padding-left:4px}
@@ -443,7 +463,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   .top .wrap{gap:9px}
   .logo{width:26px;height:26px}
   .top h1{font-size:16px}
-  .top .sub{display:none}
+  .top h1+.sub{display:none}
 }
 @media (forced-colors:active){
   .pick[aria-pressed="true"],.seg button[aria-pressed="true"],.tab[aria-current="page"],.ttab[aria-current="page"]{outline:3px solid Highlight;outline-offset:-3px}
@@ -462,6 +482,35 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
     <div>
       <h1>Stundenbewertung Dienstplan</h1>
       <p class="sub">Trage deine Dienste ein und vergleiche Soll, Ist und Saldo mit dem Dienstplan.</p>
+    </div>
+  </div>
+  <div class="wrap hintwrap">
+    <div class="install" id="install" hidden>
+      <div class="irow">
+        <span class="itxt"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M12 7.5v6.5M9.3 11.5L12 14.2l2.7-2.7"/><path d="M10.5 18h3"/></svg>Als App aufs Handy holen</span>
+        <button type="button" class="act primary" id="installGo" hidden>Installieren</button>
+        <button type="button" class="act" id="installHow" aria-expanded="false" aria-controls="installSteps">So geht’s</button>
+        <button type="button" class="iclose" id="installOff" aria-label="Hinweis ausblenden" title="Hinweis ausblenden">×</button>
+      </div>
+      <div class="isteps" id="installSteps" hidden>
+        <div class="os-ios">
+          <h3>iPhone und iPad</h3>
+          <ol>
+            <li>Diese Seite in Safari öffnen.</li>
+            <li>„Teilen“ antippen <svg class="glyph" viewBox="0 0 24 24" role="img" aria-label="Quadrat mit Pfeil nach oben"><path d="M12 14.5V3.5M8.2 7.2L12 3.4l3.8 3.8"/><path d="M8 10.5H6.5A1.5 1.5 0 0 0 5 12v7a1.5 1.5 0 0 0 1.5 1.5h11A1.5 1.5 0 0 0 19 19v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>. Je nach iPhone steckt es hinter den drei Punkten in der Leiste.</li>
+            <li>„Zum Home-Bildschirm“ wählen und mit „Hinzufügen“ bestätigen.</li>
+          </ol>
+          <p class="sub">Am iPhone speichert die App getrennt von Safari. Am besten erst installieren, dann Dienste eintragen. Schon Eingetragenes nimmst du mit der Sicherung aus den Einstellungen mit.</p>
+        </div>
+        <div class="os-android">
+          <h3>Android</h3>
+          <ol>
+            <li>Diese Seite in Chrome öffnen.</li>
+            <li>Oben rechts das Menü mit den drei Punkten antippen.</li>
+            <li>„Zum Startbildschirm hinzufügen“ wählen und die Installation bestätigen.</li>
+          </ol>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -593,12 +642,20 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
   </section>
 
   <div class="prefs">
+  <div class="pcol">
   <section class="card look" aria-label="Darstellung">
     <div class="lookrow">
       <div><h2 id="lookH">Darstellung</h2><p class="sub">Gilt nur für dieses Gerät.</p></div>
       <div class="seg" id="lookSeg" role="group" aria-labelledby="lookH">
         <button type="button" data-look="hell" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5V5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg>Hell</button><button type="button" data-look="dunkel" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4 8.2 8.2 0 1 0 20 14.6z"/></svg>Dunkel</button>
       </div>
+    </div>
+  </section>
+
+  <section class="card getapp" id="getapp" aria-label="App aufs Handy holen">
+    <div class="lookrow">
+      <div><h2>App aufs Handy holen</h2><p class="sub">Auf dem Startbildschirm öffnet sie sich wie jede andere App, auch ohne Internet.</p></div>
+      <div class="row"><button type="button" class="act primary" id="installGo2" hidden>Jetzt installieren</button><button type="button" class="act" id="installShow" aria-expanded="false" aria-controls="installSteps">Anleitung zeigen</button></div>
     </div>
   </section>
 
@@ -630,6 +687,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
     </div>
     <p class="sub" id="setNote"></p>
   </details>
+  </div>
 
   <section class="card data" aria-label="Daten und Sicherung">
     <h2>Daten &amp; Sicherung</h2>
@@ -661,7 +719,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 </main>
 
 <script>
-const APP_VERSION='2.3 · Stand 17.11.2026';
+const APP_VERSION='2.4 · Stand 17.11.2026';
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 // Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
 const TYPES=[
@@ -1372,6 +1430,36 @@ function initShell(){
   if(st) setView(st,{pop:true}); // nach dem Neuladen im selben Bereich weitermachen
   $('lookSeg').addEventListener('click',e=>{ const b=e.target.closest('button[data-look]'); if(b) setLook(b.dataset.look==='dunkel',true); });
   setLook(document.documentElement.getAttribute('data-theme')==='dark',false);
+  initInstall();
+}
+/* Hinweis „Als App aufs Handy holen“: nur im Browser (nicht als installierte App, nicht eingebettet), ausblendbar und je Gerät gemerkt.
+   Die Anleitung steht einmal im Dokument und wandert dorthin, wo sie geöffnet wird (Kopf oder Einstellungen). */
+const TIP_KEY='stundenbewertung-installhinweis';
+let installEvt=null;
+function initInstall(){
+  const root=document.documentElement, tip=$('install'), steps=$('installSteps'), card=$('getapp');
+  let app=false, framed=false;
+  try{ app=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true; }catch(e){}
+  try{ framed=window.self!==window.top; }catch(e){ framed=true; }
+  if(app){ root.classList.add('app'); return; }
+  if(framed){ root.classList.add('noinstall'); return; }
+  const ua=navigator.userAgent||'';
+  const os=(/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1))?'ios':/Android/.test(ua)?'android':'';
+  if(os) steps.dataset.os=os; // nur die Schritte für das eigene Gerät zeigen; unbekannt: beide
+  let off=false; try{ off=localStorage.getItem(TIP_KEY)==='aus'; }catch(e){}
+  tip.hidden=off;
+  const how=$('installHow'), show=$('installShow');
+  const toggle=(home,btn,other)=>{ const open=steps.parentNode!==home||steps.hidden; home.appendChild(steps); steps.hidden=!open; btn.setAttribute('aria-expanded',String(open)); other.setAttribute('aria-expanded','false'); };
+  how.addEventListener('click',()=>toggle(tip,how,show));
+  show.addEventListener('click',()=>{ toggle(card,show,how); show.textContent=steps.hidden?'Anleitung zeigen':'Anleitung ausblenden'; });
+  const hideTip=()=>{ tip.hidden=true; if(steps.parentNode===tip){ steps.hidden=true; how.setAttribute('aria-expanded','false'); } try{ localStorage.setItem(TIP_KEY,'aus'); }catch(e){} };
+  $('installOff').addEventListener('click',hideTip);
+  // Android/Chrome kann die Installation direkt anbieten
+  const offer=on=>{ $('installGo').hidden=!on; $('installGo2').hidden=!on; how.hidden=on; };
+  const go=()=>{ const e=installEvt; if(!e) return; installEvt=null; offer(false); try{ e.prompt(); }catch(_){} };
+  $('installGo').addEventListener('click',go); $('installGo2').addEventListener('click',go);
+  if(os==='android') window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); installEvt=e; offer(true); });
+  window.addEventListener('appinstalled',()=>{ installEvt=null; offer(false); hideTip(); });
 }
 initShell(); // zuerst der Rahmen: Bereiche und Darstellung hängen nicht an den Daten
 init();
