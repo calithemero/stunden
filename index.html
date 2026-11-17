@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stundenbewertung Dienstplan</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="theme-color" content="#10161c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#b3261e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stunden">
+<style>
+/* Layout: Monatsleiste oben (klebt), Ergebnis, Eingabe-Kalender, Jahresübersicht, Einstellungen (zu), Daten */
+:root{
+  --bg:#f4f6f8; --surface:#ffffff; --ink:#16212b; --muted:#5d6b78; --line:#d9e0e6; --ctrl-line:#8e9aa5;
+  --accent:#b3261e; --accent-ink:#ffffff; --good:#1b7a3d; --bad:#b3261e; --warn:#8a5a00;
+  --d24:#1d4f7a; --hol:#edbcbc; --we:#e3e8ee; --fb:#5b5b94; --br:#7a3d78; --hd:#8a5a00; --u:#2f7d4f; --fa:#1f7a7a; --ue:#555f6b; --kr:#9b3a6b;
+  --tag-ink:#ffffff; --barH:52px;
+  --display:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif; --mono:ui-monospace,'SF Mono','Cascadia Mono',Consolas,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#10161c; --surface:#18212a; --ink:#e6ecf1; --muted:#93a1ae; --line:#2b3844; --ctrl-line:#56687a;
+    --accent:#ff6b5e; --accent-ink:#10161c; --good:#5fcf88; --bad:#ff7a70; --warn:#e2b04a;
+    --d24:#5aa2dc; --hol:#5a3238; --we:#243240; --fb:#9a9ae0; --br:#d08ccc; --hd:#c9972f; --u:#5fb685; --fa:#4fc0c0; --ue:#a3afbc; --kr:#d97aa8;
+    --tag-ink:#10161c;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10161c; --surface:#18212a; --ink:#e6ecf1; --muted:#93a1ae; --line:#2b3844; --ctrl-line:#56687a;
+  --accent:#ff6b5e; --accent-ink:#10161c; --good:#5fcf88; --bad:#ff7a70; --warn:#e2b04a;
+  --d24:#5aa2dc; --hol:#5a3238; --we:#243240; --fb:#9a9ae0; --br:#d08ccc; --hd:#c9972f; --u:#5fb685; --fa:#4fc0c0; --ue:#a3afbc; --kr:#d97aa8;
+  --tag-ink:#10161c;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+html{scroll-padding-top:calc(var(--barH) + 8px)}
+body{background:var(--bg);color:var(--ink);font:15px/1.45 var(--display);padding:16px}
+main{max-width:920px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+h1{font-size:22px;margin:0;text-wrap:balance}
+h2,.h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 10px;font-weight:600}
+.sub{color:var(--muted);margin:2px 0 0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.params{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+select,input,textarea{font:inherit;font-size:16px;color:var(--ink);background:var(--bg);border:1px solid var(--ctrl-line);border-radius:6px;padding:8px;min-height:44px}
+input:invalid{border-color:var(--bad)}
+select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.note{font-size:13px;color:var(--warn);margin:10px 0 0}
+.note:empty{display:none}
+.banner{border:1px solid var(--warn);border-radius:8px;padding:10px 12px;background:var(--surface);font-size:14px}
+.banner.bad{border-color:var(--bad)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.pos{color:var(--good)} .neg{color:var(--bad)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+.short{display:none}
+
+/* Monatsleiste */
+.bar{position:sticky;top:0;z-index:5;height:var(--barH);background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:3px 6px;display:flex;align-items:center;gap:4px}
+.bar .nav{width:44px;height:44px;flex:none;border:1px solid var(--ctrl-line);background:var(--bg);color:var(--ink);border-radius:6px;font:22px/1 var(--display);cursor:pointer;touch-action:manipulation;padding:0 0 3px}
+.bar .nav:disabled{opacity:.35;cursor:default}
+.bar .title{flex:1;min-width:0;height:44px;border:0;background:none;color:var(--ink);font:600 16px var(--display);text-align:left;padding:0 8px;cursor:pointer;border-radius:6px;touch-action:manipulation;display:flex;align-items:center}
+.bar .title:hover{background:var(--bg)}
+.bar .title #barMonth{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .title .caret{font-size:11px;color:var(--muted);margin-left:4px;flex:none}
+.bar .chip{flex:none;text-align:right;line-height:1.15;padding:0 4px 0 6px}
+.bar .chip .k{font-size:10px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.bar .chip .v{font:600 15px var(--mono);font-variant-numeric:tabular-nums}
+.bar .chip .v:empty::before{content:"–";color:var(--muted)}
+.pickrow{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:6;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:end;box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.pickrow label{flex:1 1 120px}
+.pickrow[hidden]{display:none}
+
+/* Ergebnis */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;min-width:0}
+.tile .k{font-size:12px;color:var(--muted)}
+.tile .v{font:600 22px var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap}
+.tile .n{font-size:12px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+.tile .n.warn{color:var(--warn)}
+.tile.hero{grid-column:1/-1;border-left:4px solid var(--muted)}
+.tile.hero .v{font-size:32px}
+.tile.hero .n{font-size:15px;color:var(--ink);margin-top:4px}
+.tile.hero.pos{border-left-color:var(--good)} .tile.hero.pos .v{color:var(--good)}
+.tile.hero.neg{border-left-color:var(--bad)} .tile.hero.neg .v{color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap}
+.scroll{overflow-x:auto}
+table.res{margin-top:14px}
+table.res td,table.res th{font-size:16px}
+table.res td{font-family:var(--mono)}
+table.res td:first-child{font-family:var(--display);color:var(--muted)}
+table.res td.voll{color:var(--muted)}
+table.res tr.sal td{font-weight:600}
+table.res tr.sal td.voll{font-weight:500}
+table.res tr.hdr td{border-bottom:0;color:var(--muted);font-weight:400;font-size:14px}
+.explain{font-size:14px;color:var(--ink);margin:10px 0 0}
+#resLines p{margin:4px 0 0;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+button.act,label.act{border:1px solid var(--ctrl-line);background:var(--bg);color:var(--ink);border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer;min-height:44px;touch-action:manipulation}
+button.act:disabled{opacity:.45;cursor:default}
+button.act.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.act.danger{color:var(--bad);border-color:var(--bad)}
+button.act.link{border:0;background:none;text-decoration:underline;padding:4px 2px;min-height:0;color:var(--accent);font-size:14px}
+.how{font:13px/1.6 var(--mono);color:var(--ink);margin:0;white-space:pre-wrap}
+details.dt>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;min-height:36px;font-weight:600;font-size:14px;color:var(--ink);touch-action:manipulation}
+details.dt>summary::-webkit-details-marker{display:none}
+details.dt>summary::before{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);flex:none;margin:0 4px 0 3px;transition:transform .15s}
+details.dt[open]>summary::before{transform:rotate(45deg);margin-top:-5px}
+details.dt>summary h2{margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)}
+details.dt[open]>summary{margin-bottom:8px}
+details.dt{margin-top:8px}
+details.card{margin-top:0}
+table.auf td{white-space:nowrap}
+table.auf tr.sect td{text-align:left;color:var(--muted);font-size:12px;padding-top:14px;border-bottom:0;white-space:normal}
+
+/* Dienste eintragen */
+.legend{display:flex;flex-wrap:wrap;gap:6px}
+.pick{border:1px solid var(--ctrl-line);background:var(--bg);color:var(--ink);border-radius:999px;padding:0 12px;font:inherit;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;min-height:44px;touch-action:manipulation}
+.pick .dot{width:10px;height:10px;border-radius:50%;background:var(--pc,var(--muted));flex:none}
+.pick[aria-pressed="true"]{background:var(--pc,var(--muted));color:var(--tag-ink);border-color:transparent;font-weight:600}
+.pick[aria-pressed="true"] .dot{background:var(--tag-ink)}
+.pick.eraser{border-style:dashed}
+.pick.eraser .dot{display:none}
+.pick.eraser[aria-pressed="true"]{background:var(--bad);color:var(--tag-ink);border-style:solid}
+.hint{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0 0;font-size:13px;color:var(--muted);min-height:24px}
+.hint.bad{color:var(--bad)}
+.hint input{width:5.5em;min-height:40px;padding:4px 8px}
+.seg{display:inline-flex;border:1px solid var(--ctrl-line);border-radius:6px;overflow:hidden}
+.seg button{border:0;background:var(--bg);color:var(--ink);font:inherit;font-size:14px;padding:0 12px;min-height:40px;cursor:pointer;touch-action:manipulation}
+.seg button+button{border-left:1px solid var(--ctrl-line)}
+.seg button:focus-visible{outline-offset:-4px}
+.seg button[aria-pressed="true"]{background:var(--hd);color:var(--tag-ink);font-weight:600}
+.firsthint{border:1px dashed var(--ctrl-line);border-radius:6px;padding:8px 10px;margin:10px 0 0}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:10px}
+.dow{font-size:11px;color:var(--muted);text-align:center;padding-bottom:2px}
+.dow.we{font-weight:600}
+.day{min-height:62px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:4px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;gap:2px;overflow:hidden;touch-action:manipulation}
+.day.we{background:var(--we)}
+.day.hol{background:var(--hol)}
+.day.today{box-shadow:inset 0 0 0 2px var(--accent)}
+.day .nr{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1}
+.day.we:not(.hol) .nr{color:var(--muted)}
+.day .hn{font-size:10px;color:var(--ink);line-height:1.1}
+.day .tags{display:flex;flex-wrap:wrap;gap:2px;margin-top:auto}
+.day .tag{font:600 11px/1.3 var(--mono);border-radius:4px;padding:1px 4px;color:var(--tag-ink);white-space:nowrap}
+.day .tag .m{display:none}
+.t24{background:var(--d24)} .u{background:var(--u)} .kr{background:var(--kr)} .fa{background:var(--fa)} .fb{background:var(--fb)} .br{background:var(--br)} .ue{background:var(--ue)} .hd1,.hd2,.hd3{background:var(--hd)}
+.day.empty{visibility:hidden}
+.uerow{display:grid;grid-template-columns:70px 84px 1fr 44px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.uerow input{width:100%;min-height:40px;padding:4px 6px}
+.uerow .x{width:44px;height:44px;padding:0;font-size:22px;line-height:1}
+#ueBox{margin-top:12px}
+
+/* Jahresübersicht */
+table.yr{font-size:13px} table.yr td,table.yr th{padding:6px 6px;white-space:nowrap}
+table.yr th:first-child,table.yr td:first-child{position:sticky;left:0;background:var(--surface);z-index:1}
+table.yr tbody tr[data-m]{cursor:pointer}
+table.yr tbody tr[data-m]:hover td{background:var(--bg)}
+table.yr .mbtn{border:0;background:none;font:inherit;color:inherit;padding:0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+table.yr tr.cur td{background:var(--we)}
+table.yr tr.cur td:first-child{font-weight:600;box-shadow:inset 3px 0 0 var(--accent);background:var(--we)}
+table.yr tr.empty td{color:var(--muted)}
+table.yr tr.sum td{font-weight:600;border-top:2px solid var(--line)}
+#yrToggle{display:none}
+
+@media (max-width:620px){
+  .tiles{grid-template-columns:1fr 1fr}
+  .tile.konto{grid-column:1/-1}
+}
+@media (max-width:480px){
+  body{padding:12px}
+  .card{padding:10px}
+  h1{font-size:18px}
+  .long{display:none} .short{display:inline}
+  .bar{padding:3px 4px;gap:3px}
+  .bar .title{font-size:15px;padding:0 4px}
+  .bar .chip{padding:0 2px 0 4px}
+  .tile{padding:10px}
+  .tile.hero .v{font-size:28px}
+  .tile .v{font-size:17px}
+  table.res td,table.res th{font-size:15px;padding:6px 4px}
+  .pick{font-size:13px;padding:0 10px;min-height:40px;min-width:44px;justify-content:center}
+  .pick .dot{display:none}
+  #brush{background:var(--surface);margin:0 -10px;padding:6px 10px 8px;border-bottom:1px solid var(--line)}
+  .cal{gap:3px}
+  .day{min-height:64px;padding:2px 3px;gap:1px}
+  .day .hn{display:none}
+  .day.hol .nr::after{content:" FT";font-size:9px;color:var(--ink);font-weight:600}
+  .day .tags{flex-direction:column;gap:1px;margin-top:1px}
+  .day .tag{align-self:stretch;text-align:center;font-size:10px;line-height:13px;padding:0 2px}
+  .day .tag .l{display:none} .day .tag .m{display:inline}
+  .dow{font-size:12px}
+  .uerow{grid-template-columns:62px 72px 1fr 44px;gap:6px}
+  table.yr .c-at,table.yr .c-sb,table.yr .c-ib,table.yr .c-hd,table.yr .c-sv,table.yr .c-iv,table.yr .c-dv{display:none}
+  table.yr.full .c-at,table.yr.full .c-sb,table.yr.full .c-ib,table.yr.full .c-hd,table.yr.full .c-sv,table.yr.full .c-iv,table.yr.full .c-dv{display:table-cell}
+  #yrToggle{display:inline-block}
+  .how{font-size:12px}
+}
+@media (max-width:480px) and (min-height:500px){ /* Legende klebt nur, wenn darunter genug Platz für den Kalender bleibt */
+  #brush{position:sticky;top:var(--barH);z-index:4}
+  html{scroll-padding-top:calc(var(--barH) + 190px)}
+}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Stundenbewertung Dienstplan</h1>
+    <p class="sub">Trage deine Dienste ein und vergleiche Soll, Ist und Saldo mit dem Dienstplan.</p>
+  </header>
+
+  <div class="banner" id="loadWarn" hidden>Gespeicherte Daten konnten nicht gelesen werden. Eine Kopie wurde aufbewahrt. Du kannst eine Sicherung importieren oder neu beginnen – mit der ersten Änderung wird neu gespeichert. <button type="button" class="act link" id="loadImp">Sicherung importieren</button> <button type="button" class="act link" id="loadShow">Kopie anzeigen</button></div>
+  <div class="banner bad" id="storeWarn" role="alert" hidden>Achtung: Dieser Browser speichert deine Eingaben nicht (z. B. privater Modus). Beim Schließen gehen sie verloren – bitte jetzt eine Sicherung exportieren. <button type="button" class="act link" id="storeExp">Sicherung exportieren</button></div>
+
+  <div class="bar" id="bar">
+    <button type="button" class="nav" id="prevM" aria-label="Vormonat">‹</button>
+    <button type="button" class="title" id="monthTitle" aria-expanded="false" aria-controls="pickRow" title="Monat und Jahr wählen"><span id="barMonth"></span><span class="caret" aria-hidden="true">▼</span><span class="vh"> – Monat und Jahr wählen</span></button>
+    <button type="button" class="nav" id="nextM" aria-label="Folgemonat">›</button>
+    <div class="chip" id="barSaldo"><div class="k"><span class="long">Saldo bewertet</span><span class="short">Saldo bew.</span></div><div class="v" id="barSaldoV"></div></div>
+    <div class="pickrow" id="pickRow" hidden>
+      <label for="month">Monat
+        <select id="month"></select>
+      </label>
+      <label for="year">Jahr
+        <select id="year"><option>2026</option><option>2027</option><option>2028</option><option>2029</option><option>2030</option><option>2031</option><option>2032</option><option>2033</option><option>2034</option><option>2035</option></select>
+      </label>
+      <button class="act" id="todayM" type="button" title="Zum aktuellen Monat wechseln">Heute</button>
+    </div>
+  </div>
+
+  <section class="card" aria-label="Ergebnis">
+    <h2>Ergebnis · <span id="resMonth"></span></h2>
+    <div class="tiles">
+      <div class="tile hero" id="hero"><div class="k" id="heroK"></div><div class="v" id="heroV">–</div><div class="n" id="heroN"></div></div>
+      <div class="tile"><div class="k">Dienste (24 h)</div><div class="v" id="tDienste">0</div><div class="n" id="tDiensteN"></div></div>
+      <div class="tile"><div class="k">Ist bewertet</div><div class="v" id="tIstB">–</div><div class="n" id="tIstBN"></div></div>
+      <div class="tile konto"><div class="k" id="tKontoK">Konto</div><div class="v" id="tKonto">–</div><div class="n" id="tKontoN"></div></div>
+    </div>
+    <div class="row" style="margin-top:6px"><button type="button" class="act link" id="todayLink" hidden></button></div>
+    <p class="note" id="wnote" hidden><span id="wnoteT"></span> <button type="button" class="act link" id="wnoteB"></button></p>
+    <p class="note" id="vznote" hidden><span id="vznoteT"></span> <button type="button" class="act link" id="vznoteB">Auf 39 h zurücksetzen</button></p>
+    <div class="scroll"><table class="res">
+      <thead><tr><th></th><th id="hBew">Bewertet</th><th id="hVoll">Voll</th></tr></thead>
+      <tbody>
+        <tr><td>Soll</td><td id="sollB">–</td><td id="sollV" class="voll">–</td></tr>
+        <tr><td>Ist</td><td id="istB">–</td><td id="istV" class="voll">–</td></tr>
+        <tr class="sal"><td>Saldo</td><td id="salB">–</td><td id="salV" class="voll">–</td></tr>
+        <tr class="hdr"><td>HD gesondert</td><td id="hdB">–</td><td id="hdV" class="voll">–</td></tr>
+      </tbody>
+    </table></div>
+    <p id="bewExplain" class="explain"></p>
+    <div id="resLines"></div>
+    <div class="row"><button class="act primary" id="copy" type="button">Rechenweg kopieren</button><button class="act" id="share" type="button" hidden>Rechenweg teilen</button><span id="copied" class="sub" role="status"></span></div>
+    <details class="dt" id="dHow"><summary>Rechenweg anzeigen</summary><pre class="how" id="how"></pre></details>
+    <details class="dt" id="dAuf"><summary id="aufTitle">Aufstellung nach Diensttyp</summary>
+      <div class="scroll"><table class="auf">
+        <thead><tr><th>Was</th><th>Anzahl</th><th>Voll</th><th>Zählt zu</th><th>Bewertet</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table></div>
+      <button type="button" class="act link" id="allTypes">Alle Diensttypen anzeigen</button>
+    </details>
+  </section>
+
+  <section class="card" aria-label="Dienste eintragen">
+    <h2>Dienste eintragen · <span id="entryMonth"></span></h2>
+    <p class="sub" style="margin:0 0 8px">Erst Diensttyp wählen, dann Tage antippen. Nochmal antippen entfernt den Eintrag. Freie Tage bleiben leer.</p>
+    <div id="brush">
+      <div class="legend" id="legend" role="group" aria-label="Diensttyp wählen"></div>
+      <div class="hint" id="selHint">
+        <span id="hueWrap" hidden><label class="vh" for="hue">Überstunden: Minuten je Antippen</label><input id="hue" type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="60"> Min</span>
+        <span id="mbrWrap" hidden><label class="vh" for="mbr">Betriebsrat: Minuten je Antippen</label><input id="mbr" type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="480"> Min</span>
+        <span id="hdWrap" hidden><span class="seg" id="hdSeg" role="group" aria-label="HD-Stufe wählen"><button type="button" data-hd="hd1" aria-pressed="false">2 h</button><button type="button" data-hd="hd2" aria-pressed="false">4 h</button><button type="button" data-hd="hd3" aria-pressed="false">6 h</button></span></span>
+        <span id="selText" aria-live="polite"></span>
+      </div>
+    </div>
+    <p class="sub firsthint" id="firstHint" hidden></p>
+    <div class="cal" id="cal"></div>
+    <p class="sub" id="calNote" style="margin:8px 0 0"></p>
+    <div id="ueBox" hidden></div>
+    <p class="sub" id="autoStamp" style="margin:12px 0 0"></p>
+    <div class="row" style="justify-content:flex-end">
+      <button class="act" id="undo" type="button" disabled>Rückgängig</button>
+      <button class="act danger" id="clear" type="button">Monat leeren</button>
+    </div>
+  </section>
+
+  <details class="card dt" id="dYear">
+    <summary><h2 id="yTitle">Jahresübersicht</h2></summary>
+    <div class="scroll"><table class="yr" id="ytable">
+      <thead><tr><th scope="col">Monat</th><th scope="col" class="c-dienste">Dienste</th><th scope="col" class="c-at">AT</th><th scope="col" class="c-sb">Soll bew.</th><th scope="col" class="c-ib">Ist bew.</th><th scope="col" class="c-db">Saldo bew.</th><th scope="col" class="c-konto">Konto bew.</th><th scope="col" class="c-hd">HD ges.</th><th scope="col" class="c-sv">Soll voll</th><th scope="col" class="c-iv">Ist voll</th><th scope="col" class="c-dv">Saldo voll</th></tr></thead>
+      <tbody id="ybody"></tbody>
+    </table></div>
+    <button type="button" class="act link" id="yrToggle">Alle Spalten anzeigen</button>
+    <p class="sub" id="yN" style="margin:10px 0 0"></p>
+  </details>
+
+  <details class="card dt" id="dSettings">
+    <summary><h2 id="setSum">Einstellungen</h2></summary>
+    <p class="sub" style="margin:0 0 10px">Tarifwerte – musst du normalerweise nicht ändern. Die Werte stammen aus dem TV RD BAR. Wenn du zu einem anderen Jahr wechselst (auch mit ‹ › oder „Heute“), setzt die App die Höchstarbeitszeit auf den TV-Wert dieses Jahres (46 h für 2026, 44 h ab 2027).</p>
+    <div class="params">
+      <label for="w">Höchstarbeitszeit (h/Woche)
+        <input id="w" type="number" inputmode="decimal" enterkeyhint="done" min="30" max="60" step="0.5" value="46"><span class="note" id="wErr"></span>
+      </label>
+      <label for="vz">Vollzeit (h/Woche)
+        <input id="vz" type="number" inputmode="decimal" enterkeyhint="done" min="10" max="48" step="0.5" value="39"><span class="note" id="vzErr"></span>
+      </label>
+      <label for="hfb">Fortbildung (FB): Stunden je Tag
+        <input id="hfb" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.25" value="8"><span class="note" id="hfbErr"></span>
+      </label>
+      <label for="hfa">Feiertagsausgleich (FA): Stunden je Feiertag
+        <input id="hfa" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.05" value="7.8"><span class="note" id="hfaErr"></span>
+      </label>
+      <label for="hd1">Hintergrunddienst (HD) Stufe 1: Zuschlag in h
+        <input id="hd1" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="2"><span class="note" id="hd1Err"></span>
+      </label>
+      <label for="hd2">HD Stufe 2: Zuschlag in h
+        <input id="hd2" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="4"><span class="note" id="hd2Err"></span>
+      </label>
+      <label for="hd3">HD Stufe 3: Zuschlag in h
+        <input id="hd3" type="number" inputmode="decimal" enterkeyhint="done" min="0" max="24" step="0.5" value="6"><span class="note" id="hd3Err"></span>
+      </label>
+    </div>
+    <p class="sub" id="setNote" style="margin:10px 0 0"></p>
+  </details>
+
+  <section class="card" aria-label="Daten und Sicherung">
+    <h2>Daten &amp; Sicherung</h2>
+    <p class="sub" style="margin:0 0 10px">Alle Monate werden automatisch auf diesem Gerät gespeichert – ohne Anmeldung und ohne Internet. Für ein neues Handy oder als Sicherheitskopie: Sicherung exportieren und dort importieren. Die App auf dem Home-Bildschirm und der Browser haben getrennte Speicher.</p>
+    <div class="row" style="margin-top:0">
+      <button class="act" id="exp" type="button">Sicherung exportieren</button>
+      <button class="act" id="impBtn" type="button">Sicherung importieren</button>
+      <input id="imp" type="file" accept="application/json,.json" style="display:none" tabindex="-1" aria-hidden="true">
+      <button class="act" id="saveNow" type="button">Jetzt speichern</button>
+    </div>
+    <div class="banner" id="impConfirm" hidden style="margin-top:10px">
+      <p id="impText" style="margin:0 0 8px"></p>
+      <div class="row" style="margin-top:0"><button class="act" id="impCancel" type="button" aria-describedby="impText">Abbrechen</button><button class="act danger" id="impOk" type="button" aria-describedby="impText">Ersetzen</button></div>
+    </div>
+    <div class="row" style="justify-content:flex-end">
+      <button class="act" id="undoData" type="button" hidden>Rückgängig</button>
+      <button class="act danger" id="wipe" type="button">Alle Daten löschen (alle Monate)</button>
+    </div>
+    <p class="sub" id="saveStatus" style="margin:10px 0 0" role="status"></p>
+    <p class="sub" id="cloudStatus" style="margin:4px 0 0" role="status" hidden></p>
+    <button type="button" class="act link" id="expShow" hidden>Text der Sicherung anzeigen</button>
+    <textarea id="expBox" readonly rows="4" style="display:none;width:100%;margin-top:10px;font:12px var(--mono);background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:8px" aria-label="Sicherungstext"></textarea>
+  </section>
+
+  <p class="sub" id="foot" style="text-align:center;font-size:13px"></p>
+  <p id="live" class="vh" role="status"></p>
+</main>
+
+<script>
+const APP_VERSION='2.0 · Stand 17.11.2026';
+const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+// Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
+const TYPES=[
+  {id:'',   name:'Tag leeren', label:'Tag leeren', pill:'Leeren', short:'', mini:'', h:0,  f:'x', cls:'', eraser:true},
+  {id:'t24',name:'24-h-Dienst', label:'24-h-Dienst', pill:'24 h', short:'24 h', mini:'24', h:24, f:'w', cls:'t24', col:'d24'},
+  {id:'u',  name:'U Urlaub', label:'U Urlaub (zählt wie Dienst)', pill:'U', short:'U', mini:'U', h:24, f:'w', cls:'u', col:'u', voll:true},
+  {id:'ka', name:'K statt Dienst', label:'K Krank statt Dienst (24 h)', pill:'K 24', short:'K 24', mini:'K24', h:24, f:'w', cls:'kr', col:'kr', voll:true},
+  {id:'kfb',name:'K statt FB', label:'K Krank statt FB', pill:'K FB', short:'K FB', mini:'KFB', h:8, f:'1', cls:'kr', col:'kr', voll:true},
+  {id:'kbr',name:'K statt BR', label:'K Krank statt BR', pill:'K BR', short:'K BR', mini:'KBR', h:8, f:'1', cls:'kr', col:'kr', voll:true},
+  {id:'fa', name:'FA Feiertagsausgleich', label:'FA Feiertagsausgleich', pill:'FA', short:'FA', mini:'FA', h:7.8, f:'w', cls:'fa', col:'fa', voll:true},
+  {id:'fb', name:'FB Fortbildung', label:'FB Fortbildung', pill:'FB', short:'FB', mini:'FB', h:8, f:'1', cls:'fb', col:'fb', voll:true},
+  {id:'br', name:'BR Betriebsrat', label:'BR Betriebsrat (Minuten)', pill:'BR', short:'BR', mini:'BR', h:0, f:'1', cls:'br', col:'br', voll:true, brm:true},
+  {id:'ue', name:'Ü Überstunden', label:'Ü Überstunden', pill:'Ü', short:'Ü', mini:'Ü', h:0, f:'x', cls:'ue', col:'ue', voll:true, ue:true},
+  {id:'hd1',name:'HD 2 h', label:'HD 2 h', pill:'HD 2', short:'HD 2', mini:'HD2', h:2, f:'1', cls:'hd1', col:'hd', voll:true, hd:true},
+  {id:'hd2',name:'HD 4 h', label:'HD 4 h', pill:'HD 4', short:'HD 4', mini:'HD4', h:4, f:'1', cls:'hd2', col:'hd', voll:true, hd:true},
+  {id:'hd3',name:'HD 6 h', label:'HD 6 h', pill:'HD 6', short:'HD 6', mini:'HD6', h:6, f:'1', cls:'hd3', col:'hd', voll:true, hd:true}
+];
+const LEGEND=['t24','u','ka','kfb','kbr','fa','fb','br','ue','hd','']; // 'hd' = eine Pille für die drei HD-Stufen
+const state={sel:'t24', plan:{}, hd:{}, ue:{}, br:{}}; // plan: key "YYYY-MM-DD" -> [type id]; ue/br: key -> Minuten; hd: key -> Stufe
+let lastHd='hd1', last=null, undo=null, ready=false, lastJson='', showAllTypes=false, pendingImport=null, defektRaw='';
+let localSaved='', lastDataBody='';
+const cloud={ref:null,lastSent:'',timer:null,busy:false,pending:null};
+const T=id=>TYPES.find(x=>x.id===id);
+const hm=mi=>`${Math.floor(mi/60)}:${String(mi%60).padStart(2,'0')} h`;
+const dayFactor=(k,f)=>(state.plan[k]||[]).some(id=>{const t=TYPES.find(x=>x.id===id);return t&&t.f==='w';})?f:1;
+
+function easter(y){ // anonymer gregorianischer Algorithmus
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3);
+  const h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
+  const mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;
+  return new Date(y,mo-1,da);
+}
+const pad=n=>String(n).padStart(2,'0');
+const key=(y,m,d)=>`${y}-${pad(m+1)}-${pad(d)}`;
+function addDays(dt,n){const x=new Date(dt);x.setDate(x.getDate()+n);return x;}
+function holidays(y){ // Brandenburg
+  const e=easter(y), h={};
+  const add=(dt,n)=>{h[key(dt.getFullYear(),dt.getMonth(),dt.getDate())]=n;};
+  add(new Date(y,0,1),'Neujahr');
+  add(addDays(e,-2),'Karfreitag');
+  add(addDays(e,0),'Ostersonntag');
+  add(addDays(e,1),'Ostermontag');
+  add(new Date(y,4,1),'Tag der Arbeit');
+  add(addDays(e,39),'Himmelfahrt');
+  add(addDays(e,49),'Pfingstsonntag');
+  add(addDays(e,50),'Pfingstmontag');
+  add(new Date(y,9,3),'Tag der Dt. Einheit');
+  add(new Date(y,9,31),'Reformationstag');
+  add(new Date(y,11,25),'1. Weihnachtstag');
+  add(new Date(y,11,26),'2. Weihnachtstag');
+  return h;
+}
+function special(y){ // 24.12. und 31.12. werden wie Feiertage markiert (nur Anzeige, das Soll bleibt unverändert)
+  return {[key(y,11,24)]:'Heiligabend',[key(y,11,31)]:'Silvester'};
+}
+const fmt=(x,n=2)=>x.toLocaleString('de-DE',{minimumFractionDigits:n,maximumFractionDigits:n});
+const fmtW=x=>fmt(x,x%1?1:0);
+const sgn=x=>(x>0.004?'+':'')+fmt(x);
+const scl=x=>Math.abs(x)<0.005?'':x>0?'pos':'neg';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const timeNow=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+const cnt=(d,m)=>`${d} ${d===1?'Tag':'Tage'} mit Einträgen in ${m} ${m===1?'Monat':'Monaten'}`;
+const mon=m=>MONATE[m].length>4?MONATE[m].slice(0,3)+'.':MONATE[m]; // „Nov.“, aber „Mai“, „Juni“, „Juli“
+const localDate=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const tagDays=o=>new Set(Object.keys(o.plan||{}).concat(Object.keys(o.hd||{}),Object.keys(o.ue||{}),Object.keys(o.br||{})));
+function curYM(){ const now=new Date(); const y=Math.min(2035,Math.max(2026,now.getFullYear())); const m=(now.getFullYear()>=2026&&now.getFullYear()<=2035)?now.getMonth():10; return {y,m}; }
+function live(s){ const el=$('live'); el.textContent=''; setTimeout(()=>{el.textContent=s;},30); }
+function stamp(s,warn){ $('autoStamp').textContent=s; $('autoStamp').classList.toggle('warn',!!warn); }
+function verdict(saldo,m){
+  return saldo>0.004?`Im ${MONATE[m]} liegst du ${fmt(saldo)} h über dem Soll (bewertet).`
+    :saldo<-0.004?`Im ${MONATE[m]} liegst du ${fmt(-saldo)} h unter dem Soll (bewertet).`
+    :`Im ${MONATE[m]} bist du genau auf Soll.`;
+}
+function monthRanges(idx){ // [0,1,2,5] -> "Jan–Mär, Jun"
+  const out=[]; let i=0;
+  while(i<idx.length){ let j=i; while(j+1<idx.length&&idx[j+1]===idx[j]+1) j++; out.push(j>i+1?`${MONATE[idx[i]].slice(0,3)}–${MONATE[idx[j]].slice(0,3)}`:idx.slice(i,j+1).map(x=>MONATE[x].slice(0,3)).join(', ')); i=j+1; }
+  return out.join(', ');
+}
+
+function init(){
+  $('month').innerHTML=MONATE.map((n,i)=>`<option value="${i}">${n}</option>`).join('');
+  const c=curYM(); $('year').value=String(c.y); $('month').value=String(c.m);
+  syncW();
+  load();
+  guardYM();
+  lastJson=dataJson(); lastDataBody=dataBody();
+  wireStorage();
+  buildLegend();
+  wireBar();
+  wireEntry();
+  const phone=matchMedia('(max-width:480px)').matches;
+  ['dHow','dAuf','dYear'].forEach(id=>{ $(id).open=!phone; });
+  $('dSettings').open=false;
+  if(navigator.share) $('share').hidden=false;
+  ['year','month'].forEach(i=>$(i).addEventListener('change',()=>{ if(i==='year') syncW(); render(); }));
+  ['w','vz','hfb','hfa','hd1','hd2','hd3','hue','mbr'].forEach(i=>$(i).addEventListener('input',render));
+  $('copy').addEventListener('click',async()=>{
+    const txt=buildText();
+    try{ await navigator.clipboard.writeText(txt); $('copied').textContent='Kopiert.'; }
+    catch(e){ $('copied').textContent='Kopieren nicht möglich. Text im Rechenweg markieren und von Hand kopieren.'; $('dHow').open=true; }
+  });
+  $('share').addEventListener('click',()=>{ try{ navigator.share({title:`Stundenbewertung ${MONATE[last.m]} ${last.y}`,text:buildText()}).catch(()=>{}); }catch(e){} });
+  render();
+  ready=true;
+}
+function syncW(){
+  $('w').value = +$('year').value>=2027 ? 44 : 46;
+}
+function guardYM(){ // nach Laden/Import: ungültige Werte auf den aktuellen Monat setzen
+  const c=curYM();
+  if(!$('year').value) $('year').value=String(c.y);
+  if(!$('month').value) $('month').value=String(c.m);
+}
+
+/* Monatsleiste */
+function goTo(y,m){
+  const yc=$('year').value!==String(y);
+  $('year').value=String(y); $('month').value=String(m);
+  $(yc?'year':'month').dispatchEvent(new Event('change'));
+}
+function closePick(){ const wasIn=$('pickRow').contains(document.activeElement); $('pickRow').hidden=true; $('monthTitle').setAttribute('aria-expanded','false'); if(wasIn) $('monthTitle').focus({preventScroll:true}); }
+function wireBar(){
+  const step=dir=>{ let y=+$('year').value, m=+$('month').value+dir; if(m<0){m=11;y--;} if(m>11){m=0;y++;} if(y<2026||y>2035) return; goTo(y,m); };
+  $('prevM').addEventListener('click',()=>step(-1));
+  $('nextM').addEventListener('click',()=>step(1));
+  const today=()=>{ const c=curYM(); goTo(c.y,c.m); };
+  $('todayM').addEventListener('click',today);
+  $('todayLink').addEventListener('click',today);
+  $('monthTitle').addEventListener('click',()=>{ const open=$('pickRow').hidden; $('pickRow').hidden=!open; $('monthTitle').setAttribute('aria-expanded',String(open)); if(open) $('month').focus(); });
+  ['year','month'].forEach(i=>$(i).addEventListener('change',closePick));
+  document.addEventListener('click',e=>{ if(!$('pickRow').hidden&&!e.target.closest('#bar')) closePick(); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('pickRow').hidden){ closePick(); $('monthTitle').focus(); } });
+}
+
+/* Legende (Pinsel-Prinzip: Typ wählen, Tage antippen) */
+function buildLegend(){
+  $('legend').innerHTML=LEGEND.map(id=>{
+    if(id==='hd') return `<button type="button" class="pick" data-id="hd" aria-pressed="false" style="--pc:var(--hd)" title="HD Hintergrunddienst"><span class="dot"></span><span class="long">HD Hintergrunddienst</span><span class="short">HD</span></button>`;
+    const t=T(id);
+    return `<button type="button" class="pick${t.eraser?' eraser':''}" data-id="${id}" aria-pressed="false" style="--pc:${t.col?`var(--${t.col})`:'var(--muted)'}" title="${t.label}"><span class="dot"></span><span class="long">${t.label}</span><span class="short">${t.pill}</span></button>`;
+  }).join('');
+  $('legend').addEventListener('click',e=>{
+    const b=e.target.closest('.pick'); if(!b) return;
+    state.sel=b.dataset.id==='hd'?lastHd:b.dataset.id;
+    syncLegend();
+  });
+  $('hdSeg').addEventListener('click',e=>{ const b=e.target.closest('button[data-hd]'); if(!b) return; state.sel=lastHd=b.dataset.hd; syncLegend(); });
+}
+function syncLegend(){
+  const isHd=state.sel.startsWith('hd'); if(isHd) lastHd=state.sel;
+  document.querySelectorAll('#legend .pick').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.id===(isHd?'hd':state.sel))));
+  document.querySelectorAll('#hdSeg button').forEach(x=>x.setAttribute('aria-pressed',String(x.dataset.hd===state.sel)));
+  const t=T(state.sel)||{};
+  $('hdWrap').hidden=!isHd;
+  $('hueWrap').hidden=!t.ue;
+  $('mbrWrap').hidden=!t.brm;
+  hintText(false);
+}
+function hintText(err){
+  const f=last?last.f:((+$('vz').value||39)/(+$('w').value||46));
+  const t=T(state.sel)||{}, h24=fmt(24*f), fp=fmt(f*100,2)+' %';
+  let s='';
+  if(err) s='Bitte Minuten eintragen (1–1440) – solange wird nichts eingetragen.';
+  else if(state.sel==='') s='Tag leeren: Antippen entfernt alle Einträge des Tages.';
+  else if(t.ue) s=`Ü Überstunden: Antippen trägt diese Minuten ein, nochmal antippen entfernt sie. Diensttag × ${fp}, sonst 1:1.`;
+  else if(t.brm) s='BR Betriebsrat: Antippen trägt diese Minuten ein, nochmal antippen entfernt sie. Zählt 1:1.';
+  else if(t.hd) s=`HD Hintergrunddienst: Zuschlag ${fmtW(t.h)} h, wird gesondert ausgewiesen und ist nicht im Saldo. Eine Stufe je Tag.`;
+  else if(t.id==='t24') s=`24-h-Dienst: zählt 24 h voll, ${h24} h bewertet.`;
+  else if(t.id==='u') s=`U Urlaub: zählt wie ein 24-h-Dienst (${h24} h bewertet).`;
+  else if(t.id==='ka') s=`K Krank statt Dienst: zählt wie ein 24-h-Dienst (${h24} h bewertet).`;
+  else if(t.id==='kfb') s=`K Krank statt FB: zählt ${fmtW(t.h)} h, 1:1.`;
+  else if(t.id==='kbr') s=`K Krank statt BR: zählt ${fmtW(t.h)} h, 1:1.`;
+  else if(t.id==='fa') s=`FA Feiertagsausgleich: zählt ${fmtW(t.h)} h voll, ${fmt(t.h*f)} h bewertet.`;
+  else if(t.id==='fb') s=`FB Fortbildung: zählt ${fmtW(t.h)} h, 1:1 (keine Umrechnung).`;
+  const el=$('selText'); if(el.textContent!==s) el.textContent=s;
+  $('selHint').classList.toggle('bad',!!err||state.sel==='');
+}
+
+/* Eingabe: Tages-Tipps, Rückgängig, Monat leeren, Ü/BR-Liste */
+function takeUndo(label){ undo={label, json:JSON.stringify(snapshot())}; }
+function doUndo(){
+  if(!undo) return;
+  const d=JSON.parse(undo.json), lbl=undo.label, s=d.settings||{}; undo=null;
+  state.plan=d.plan||{}; state.hd=d.hd||{}; state.ue=d.ue||{}; state.br=d.br||{};
+  if(lbl==='Import'){ // nur der Import ändert Tarifwerte – nur dann werden sie zurückgesetzt
+    for(const [i,v] of Object.entries(s)) if(SETTINGS.includes(i)&&$(i)) $(i).value=v;
+    guardYM(); render();
+  } else if(s.year!==undefined&&s.month!==undefined&&($('year').value!==String(s.year)||$('month').value!==String(s.month))){
+    goTo(+s.year,+s.month); // zum betroffenen Monat springen; rendert über das change-Ereignis
+  } else render();
+  live(`Wiederhergestellt: ${lbl}`);
+  if(lbl==='Import'||lbl==='Alles löschen') $('saveStatus').textContent='Rückgängig gemacht – der vorherige Stand ist wiederhergestellt.';
+}
+function wireEntry(){
+  $('cal').addEventListener('click',e=>{
+    const b=e.target.closest('.day'); if(!b||!b.dataset.k) return;
+    const k=b.dataset.k, d=+k.slice(8), m=+k.slice(5,7)-1;
+    const st=T(state.sel)||{};
+    const lbl=`${d}. ${mon(m)}`, who=`${d}. ${MONATE[m]}`;
+    let msg;
+    if(state.sel===''){
+      if(!state.plan[k]&&!state.hd[k]&&!state.ue[k]&&!state.br[k]) return;
+      takeUndo(lbl); delete state.plan[k]; delete state.hd[k]; delete state.ue[k]; delete state.br[k]; msg=`${who}: Tag geleert`;
+    } else if(st.ue||st.brm){
+      const o=st.ue?state.ue:state.br, inp=st.ue?'hue':'mbr', what=st.ue?'Überstunden':'Betriebsrat';
+      const mi=Math.max(0,Math.round(+$(inp).value||0));
+      if(o[k]){ takeUndo(lbl); delete o[k]; msg=`${who}: ${what} entfernt`; }
+      else if(mi>0&&mi<=1440){ takeUndo(lbl); o[k]=mi; msg=`${who}: ${mi} ${mi===1?'Minute':'Minuten'} ${what} eingetragen`; }
+      else { hintText(true); $(inp).focus(); return; }
+    } else if(st.hd){
+      takeUndo(lbl);
+      if(state.hd[k]===state.sel){ delete state.hd[k]; msg=`${who}: HD entfernt`; }
+      else { state.hd[k]=state.sel; msg=`${who}: HD ${fmtW(st.h)} h eingetragen`; }
+    } else {
+      takeUndo(lbl);
+      const a=state.plan[k]||[];
+      if(a.includes(state.sel)){ const r=a.filter(x=>x!==state.sel); if(r.length) state.plan[k]=r; else delete state.plan[k]; msg=`${who}: ${st.name} entfernt`; }
+      else { state.plan[k]=[state.sel]; msg=`${who}: ${st.name} eingetragen`; } // ein Diensttyp je Tag; Ü, BR und HD bleiben eigene Ebenen
+    }
+    live(msg); render();
+  });
+  $('undo').addEventListener('click',doUndo);
+  $('undoData').addEventListener('click',doUndo);
+  $('clear').addEventListener('click',()=>{
+    const y=+$('year').value,m=+$('month').value, c=$('clear');
+    if(!c.dataset.sure){ c.dataset.sure='1'; c.textContent=`Wirklich ${MONATE[m]} leeren?`; live(`Nochmal tippen, um ${MONATE[m]} zu leeren`); clearTimeout(c._t); c._t=setTimeout(()=>{ delete c.dataset.sure; c.textContent=`${MONATE[m]} leeren`; },6000); return; }
+    clearTimeout(c._t); delete c.dataset.sure;
+    takeUndo('Monat leeren');
+    [state.plan,state.hd,state.ue,state.br].forEach(o=>Object.keys(o).forEach(k=>{ if(k.startsWith(`${y}-${pad(m+1)}-`)) delete o[k]; }));
+    live(`${MONATE[m]} geleert – Rückgängig möglich`);
+    render();
+  });
+  $('allTypes').addEventListener('click',()=>{ showAllTypes=!showAllTypes; render(); });
+  $('yrToggle').addEventListener('click',()=>{ const t=$('ytable'); t.classList.toggle('full'); $('yrToggle').textContent=t.classList.contains('full')?'Weniger Spalten':'Alle Spalten anzeigen'; });
+  $('ybody').addEventListener('click',e=>{ const tr=e.target.closest('tr[data-m]'); if(tr) goTo(+$('year').value,+tr.dataset.m); });
+  $('wnoteB').addEventListener('click',()=>{ $('w').value=+$('year').value>=2027?44:46; render(); });
+  $('vznoteB').addEventListener('click',()=>{ $('vz').value=39; render(); });
+  $('ueBox').addEventListener('change',e=>{
+    const i=e.target.closest('input[data-k]'); if(!i) return;
+    const o=i.dataset.s==='br'?state.br:state.ue;
+    const v=Math.round(+i.value||0);
+    if(v<1||v>1440){ i.value=o[i.dataset.k]; const s=i.nextElementSibling; s.textContent='Mindestens 1 Minute, höchstens 1440 – zum Entfernen × tippen.'; s.className='bad'; return; }
+    if(v===o[i.dataset.k]){ i.value=v; return; }
+    takeUndo('Minuten'); o[i.dataset.k]=v; render();
+  });
+  $('ueBox').addEventListener('click',e=>{ const b=e.target.closest('button[data-del]'); if(!b) return; takeUndo('Entfernen'); delete (b.dataset.s==='br'?state.br:state.ue)[b.dataset.del]; render(); });
+}
+
+/* Speichern */
+const KEY='stundenbewertung-v1';
+const SETTINGS=['year','month','w','vz','hfb','mbr','hfa','hd1','hd2','hd3','hue'];
+function settingsObj(){ const settings={}; SETTINGS.forEach(i=>settings[i]=$(i).value); return settings; }
+const dataBody=()=>JSON.stringify({plan:state.plan,hd:state.hd,ue:state.ue,br:state.br});
+function dataJson(){ return JSON.stringify({settings:settingsObj(),plan:state.plan,hd:state.hd,ue:state.ue,br:state.br}); }
+function snapshot(){ // „saved“ = Zeitpunkt der letzten Datenänderung (für den Abgleich zwischen Geräten)
+  return {v:1,saved:localSaved,settings:settingsObj(),plan:state.plan,hd:state.hd,ue:state.ue,br:state.br};
+}
+function applyData(d){
+  if(!d||d.v!==1) throw new Error('Unbekanntes Format');
+  const okKey=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
+  state.plan={};state.hd={};state.ue={};state.br={};
+  for(const [k,a] of Object.entries(d.plan||{})) if(okKey(k)&&Array.isArray(a)&&a.length) state.plan[k]=a.filter(x=>typeof x==='string');
+  for(const [k,v] of Object.entries(d.hd||{})) if(okKey(k)&&typeof v==='string') state.hd[k]=v;
+  for(const [k,v] of Object.entries(d.ue||{})) if(okKey(k)&&Number.isFinite(+v)&&+v>0) state.ue[k]=Math.round(+v);
+  for(const [k,v] of Object.entries(d.br||{})) if(okKey(k)&&Number.isFinite(+v)&&+v>0) state.br[k]=Math.round(+v);
+  // Altbestand: BR war ein Tagestyp mit festen Stunden (Einstellung hbr) – wird zu Minuten je Tag
+  const oldH=Math.round((+((d.settings||{}).hbr)||8)*60);
+  for(const k of Object.keys(state.plan)){ const a=state.plan[k]; if(a.includes('br')){ if(!state.br[k]) state.br[k]=oldH; state.plan[k]=a.filter(x=>x!=='br'); if(!state.plan[k].length) delete state.plan[k]; } }
+  for(const [i,v] of Object.entries(d.settings||{})){
+    if(!SETTINGS.includes(i)||!$(i)) continue;
+    const el=$(i);
+    if(el.tagName==='SELECT'){ el.value=v; continue; }
+    const n=+v; if(Number.isFinite(n)&&n>=+el.min&&n<=+el.max) el.value=v; // Werte außerhalb des erlaubten Bereichs bleiben unverändert
+  }
+}
+function save(force){
+  if(!ready) return true;
+  const j=dataJson(); if(!force&&j===lastJson) return true;
+  const dbody=dataBody(); if(dbody!==lastDataBody){ localSaved=new Date().toISOString(); lastDataBody=dbody; }
+  const snap=snapshot(); cloudQueue(snap);
+  try{ localStorage.setItem(KEY,JSON.stringify(snap)); lastJson=j; stamp(`Automatisch gespeichert · ${timeNow()} · nur auf diesem Gerät`); $('storeWarn').hidden=true; $('loadWarn').hidden=true; return true; }
+  catch(e){ stamp('Nicht gespeichert – bitte Sicherung exportieren',true); $('storeWarn').hidden=false; return false; }
+}
+function load(){
+  let raw=null;
+  try{ raw=localStorage.getItem(KEY); }catch(e){ stamp('Noch nichts gespeichert'); return; }
+  if(!raw){ stamp('Noch nichts gespeichert'); return; }
+  try{
+    const d=JSON.parse(raw); applyData(d); localSaved=d.saved||'';
+    const t=d.saved?new Date(d.saved):null;
+    stamp(t&&!isNaN(t)?`Stand ${t.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}, ${t.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})} · gespeichert auf diesem Gerät`:'Gespeichert auf diesem Gerät');
+  }catch(e){
+    defektRaw=raw;
+    try{ localStorage.setItem(KEY+'-defekt-'+localDate(new Date()),raw); }catch(_){}
+    $('loadWarn').hidden=false; stamp('Gespeicherte Daten konnten nicht gelesen werden',true);
+  }
+}
+function wireStorage(){
+  $('saveNow').addEventListener('click',()=>{ $('saveStatus').textContent=save(true)?`Gespeichert um ${timeNow()} Uhr (auf diesem Gerät).`:'Speichern ist in diesem Browser nicht möglich. Bitte Sicherung exportieren.'; });
+  $('exp').addEventListener('click',()=>{
+    const snap=snapshot(), txt=JSON.stringify(snap,null,1), box=$('expBox');
+    const days=tagDays(snap), months=new Set([...days].map(k=>k.slice(0,7)));
+    const now=new Date(), name=`stundenbewertung-sicherung-${localDate(now)}_${pad(now.getHours())}${pad(now.getMinutes())}.json`;
+    box.value=txt; box.style.display='none'; $('expShow').hidden=false;
+    try{
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([txt],{type:'application/json'}));
+      a.download=name; document.body.appendChild(a); a.click(); a.remove();
+    }catch(e){}
+    $('saveStatus').textContent=`Sicherung erstellt: ${name} (${cnt(days.size,months.size)}). Falls kein Download startet: „Text der Sicherung anzeigen“ und den Text als Datei ablegen.`;
+  });
+  $('expShow').addEventListener('click',()=>{ const b=$('expBox'); b.style.display=b.style.display==='none'?'block':'none'; });
+  $('impBtn').addEventListener('click',()=>$('imp').click());
+  $('loadImp').addEventListener('click',()=>$('imp').click());
+  $('storeExp').addEventListener('click',()=>$('exp').click());
+  $('imp').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onerror=()=>{ pendingImport=null; $('impConfirm').hidden=true; $('saveStatus').textContent='Die Datei konnte nicht gelesen werden.'; };
+    r.onload=()=>{
+      let d=null; try{ d=JSON.parse(r.result); }catch(err){}
+      if(!d||d.v!==1||typeof d.plan!=='object'){ pendingImport=null; $('impConfirm').hidden=true; $('saveStatus').textContent='Diese Datei ist keine Sicherung dieser App.'; return; }
+      pendingImport=d;
+      const days=tagDays(d), months=new Set([...days].map(k=>k.slice(0,7)));
+      const t=d.saved?new Date(d.saved):null;
+      $('impText').textContent=`Sicherung${t&&!isNaN(t)?' vom '+t.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+', '+t.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' Uhr':''} einlesen? Sie enthält ${cnt(days.size,months.size)}. Deine aktuellen Eingaben werden vollständig ersetzt.`;
+      $('impConfirm').hidden=false; $('impCancel').focus();
+    };
+    r.readAsText(f); e.target.value='';
+  });
+  $('impCancel').addEventListener('click',()=>{ pendingImport=null; $('impConfirm').hidden=true; });
+  $('impOk').addEventListener('click',()=>{
+    const d=pendingImport; if(!d) return; pendingImport=null; $('impConfirm').hidden=true;
+    takeUndo('Import');
+    try{ applyData(d); }catch(err){ undo=null; $('saveStatus').textContent='Die Datei konnte nicht gelesen werden: '+err.message; return; }
+    guardYM(); render();
+    $('saveStatus').textContent=save()?'Sicherung eingelesen und gespeichert.':'Sicherung eingelesen – Speichern ist in diesem Browser nicht möglich, bitte vor dem Schließen exportieren.';
+  });
+  $('loadShow').addEventListener('click',()=>{ const b=$('expBox'); b.value=defektRaw; b.style.display='block'; b.scrollIntoView({block:'center'}); b.focus(); });
+  $('wipe').addEventListener('click',()=>{
+    const w=$('wipe');
+    if(!w.dataset.sure){ w.dataset.sure='1'; w.textContent='Wirklich alle Monate löschen?'; live('Nochmal tippen, um alle Daten zu löschen'); clearTimeout(w._t); w._t=setTimeout(()=>{delete w.dataset.sure;w.textContent='Alle Daten löschen (alle Monate)';},6000); return; }
+    clearTimeout(w._t); delete w.dataset.sure; w.textContent='Alle Daten löschen (alle Monate)';
+    takeUndo('Alles löschen');
+    state.plan={};state.hd={};state.ue={};state.br={};
+    try{localStorage.removeItem(KEY);}catch(e){}
+    lastJson='';
+    render(); $('saveStatus').textContent='Alle Eingaben gelöscht.';
+  });
+}
+
+/* Abgleich zwischen Geräten – nur aktiv, wenn die Seite in der Claude-App läuft; sonst bleibt alles auf dem Gerät */
+function bodyOf(snap){ const c=Object.assign({},snap); delete c.saved; return JSON.stringify(c); }
+function cloudMsg(t){ const e=$('cloudStatus'); if(e){ e.textContent=t; e.hidden=false; } }
+function cloudQueue(snap){
+  if(!cloud.ref) return;
+  const body=bodyOf(snap);
+  if(body===cloud.lastSent) return;
+  cloud.pending={body,saved:snap.saved};
+  clearTimeout(cloud.timer); cloud.timer=setTimeout(cloudFlush,1200);
+}
+async function cloudFlush(){
+  if(!cloud.ref||cloud.busy||!cloud.pending) return;
+  cloud.busy=true; const p=cloud.pending; cloud.pending=null;
+  try{
+    await cloud.ref.set({json:p.body,saved:p.saved});
+    cloud.lastSent=p.body;
+    cloudMsg('Cloud-Speicher: gespeichert um '+timeNow()+' Uhr, auch auf deinen anderen Geräten.');
+  }catch(e){
+    cloudMsg('Cloud-Speicher: Speichern fehlgeschlagen ('+((e&&e.code)||'Fehler')+'). Die Daten bleiben auf diesem Gerät. Bitte Sicherung exportieren.');
+  }
+  cloud.busy=false;
+  if(cloud.pending) cloud.timer=setTimeout(cloudFlush,1200);
+}
+async function initCloud(){
+  try{
+    if(!window.claude||typeof window.claude.use!=='function') return;
+    const wait=(pr,ms)=>Promise.race([pr,new Promise(r=>setTimeout(()=>r(null),ms))]);
+    const db=await wait(window.claude.use('db'),12000);
+    const user=await wait(window.claude.use('user'),12000);
+    if(!db||!user) return;
+    const id=await user.id(); if(!id) return;
+    const ref=db.doc('data/users/'+id+'/state');
+    const snap=await wait(ref.get(),12000);
+    if(!snap){ cloudMsg('Cloud-Speicher: nicht erreichbar, nur dieses Gerät.'); return; }
+    cloud.ref=ref;
+    if(snap.exists){
+      const d=snap.data()||{};
+      if(typeof d.json==='string'&&d.json){
+        cloud.lastSent=d.json;
+        if(String(d.saved||'')>localSaved){
+          try{ applyData(JSON.parse(d.json)); localSaved=d.saved; guardYM(); lastDataBody=dataBody(); render(); cloudMsg('Cloud-Speicher: aktiv. Stand aus der Cloud geladen.'); return; }catch(e){}
+        }
+      }
+    }
+    cloudMsg('Cloud-Speicher: aktiv.');
+    cloudQueue(snapshot());
+  }catch(e){ cloudMsg('Cloud-Speicher: nicht verfügbar, nur dieses Gerät.'); }
+}
+
+/* Rechnen und Anzeigen */
+function render(){
+  const y=+$('year').value, m=+$('month').value, pre=`${y}-${pad(m+1)}-`;
+  // Werte außerhalb des erlaubten Bereichs werden nicht gerechnet (beim Laden würden sie ebenfalls verworfen), stattdessen gilt der Standardwert
+  const num=(id,def)=>{ const el=$(id); return el.validity.valid?(+el.value||0):def; };
+  const tvW=y>=2027?44:46;
+  const W=num('w',tvW)||tvW, VZ=num('vz',39)||39;
+  ['fb','kfb'].forEach(id=>T(id).h=Math.max(0,num('hfb',8)));
+  T('kbr').h=Math.max(0,num('mbr',480)/60);
+  T('fa').h=Math.max(0,num('hfa',7.8));
+  ['hd1','hd2','hd3'].forEach((id,i)=>{const t=T(id); t.h=Math.max(0,num(id,[2,4,6][i])); t.name=`HD ${fmtW(t.h)} h`; t.label=t.name; t.pill=`HD ${fmtW(t.h)}`; t.short=t.pill; t.mini=`HD${fmtW(t.h)}`;
+    const b=document.querySelector(`#hdSeg button[data-hd="${id}"]`); if(b) b.textContent=`${fmtW(t.h)} h`;});
+  ['w','vz','hfb','hfa','hd1','hd2','hd3'].forEach(id=>{ const el=$(id); $(id+'Err').textContent=el.validity.valid?'':`Ungültiger Wert – erlaubt sind ${el.min} bis ${el.max}.`; });
+  const hol=holidays(y), sp=special(y);
+  const f=VZ/W;
+  const wDev=(y===2026&&W!==46)||(y>=2027&&W!==44), vDev=VZ!==39;
+  $('wnote').hidden=!wDev;
+  if(wDev){ $('wnoteT').textContent=`Hinweis: Laut TV RD BAR gilt 46 h ab 01.01.2026 und 44 h ab 01.01.2027. Du hast ${fmtW(W)} h eingestellt – Soll und Umrechnung ändern sich dadurch.`; $('wnoteB').textContent=`Auf ${y>=2027?44:46} h zurücksetzen`; }
+  $('vznote').hidden=!vDev;
+  if(vDev) $('vznoteT').textContent=`Hinweis: Vollzeit laut TV RD BAR ist 39 h. Du hast ${fmtW(VZ)} h eingestellt – Soll bewertet und Umrechnung ändern sich dadurch.`;
+
+  // Kalender
+  const first=new Date(y,m,1), dim=new Date(y,m+1,0).getDate();
+  const startDow=(first.getDay()+6)%7; // Mo=0
+  const dows=['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const now=new Date(), todayK=key(now.getFullYear(),now.getMonth(),now.getDate());
+  let html=dows.map((d,i)=>`<div class="dow${i>=5?' we':''}">${d}</div>`).join('');
+  for(let i=0;i<startDow;i++) html+='<div class="day empty"></div>';
+  let at=0, feiertage=[];
+  for(let d=1;d<=dim;d++){
+    const dt=new Date(y,m,d), dow=(dt.getDay()+6)%7, k=key(y,m,d);
+    const weekend=dow>=5, hname=hol[k]||sp[k];
+    if(!weekend){ at++; if(hname) feiertage.push(`${d}.${m+1}. ${hname}`); } // Soll ohne Feiertagsabzug: jeder Werktag zählt
+    const tags=[...(state.plan[k]||[]).map(id=>T(id)),T(state.hd[k]||''),
+      state.ue[k]?{id:'ue',cls:'ue',short:`Ü ${hm(state.ue[k])}`,mini:`Ü${hm(state.ue[k]).replace(' h','')}`,name:`Überstunden ${hm(state.ue[k])}`}:null,
+      state.br[k]?{id:'br',cls:'br',short:`BR ${hm(state.br[k])}`,mini:`BR${hm(state.br[k]).replace(' h','')}`,name:`Betriebsrat ${hm(state.br[k])}`}:null].filter(x=>x&&x.id);
+    const isToday=k===todayK;
+    html+=`<button type="button" class="day${weekend?' we':''}${hname?' hol':''}${isToday?' today':''}" data-k="${k}" aria-label="${d}. ${MONATE[m]}${hname?', '+hname:''}${isToday?', heute':''}${tags.map(x=>', '+x.name).join('')}">
+      <span class="nr">${d}</span>${hname?`<span class="hn">${hname}</span>`:''}${tags.length?`<span class="tags">${tags.map(x=>`<span class="tag ${x.cls}"><span class="l">${x.short}</span><span class="m">${x.mini}</span></span>`).join('')}</span>`:''}</button>`;
+  }
+  const act=document.activeElement, focusK=act&&act.classList&&act.classList.contains('day')?act.dataset.k:null;
+  $('cal').innerHTML=html;
+  if(focusK){ const el=$('cal').querySelector(`.day[data-k="${focusK}"]`); if(el) el.focus({preventScroll:true}); }
+
+  // Soll
+  const sollVoll=W/5*at, sollBew=VZ/5*at;
+  // Ist
+  const rows=TYPES.filter(t=>t.id).map(t=>{
+    if(t.brm){
+      const es=Object.entries(state.br).filter(([k])=>k.startsWith(pre));
+      const vol=es.reduce((a,[k,mi])=>a+mi/60,0);
+      return {t,n:es.length,vol,fac:1,bew:vol};
+    }
+    if(t.ue){
+      const es=Object.entries(state.ue).filter(([k])=>k.startsWith(pre));
+      const vol=es.reduce((a,[k,mi])=>a+mi/60,0), bew=es.reduce((a,[k,mi])=>a+mi/60*dayFactor(k,f),0);
+      return {t,n:es.length,vol,fac:vol?bew/vol:f,bew};
+    }
+    const n=t.hd
+      ? Object.entries(state.hd).filter(([k,v])=>v===t.id&&k.startsWith(pre)).length
+      : Object.entries(state.plan).filter(([k,v])=>v.includes(t.id)&&k.startsWith(pre)).length;
+    const fac=t.f==='w'?f:1, vol=t.hd?0:n*t.h;
+    return {t,n,vol,fac,bew:n*t.h*fac};
+  });
+  const istVoll=rows.reduce((a,r)=>a+r.vol,0), istBew=rows.filter(r=>!r.t.hd).reduce((a,r)=>a+r.bew,0); // HD gesondert, nicht im Ist
+  const nIst=rows.filter(r=>!r.t.voll).reduce((a,r)=>a+r.n,0);
+  const stdHD=rows.filter(r=>r.t.hd).reduce((a,r)=>a+r.bew,0);
+  const nAll=rows.filter(r=>!r.t.hd).reduce((a,r)=>a+r.n,0), nHD=rows.filter(r=>r.t.hd).reduce((a,r)=>a+r.n,0), nAny=nAll+nHD;
+  const stdFB=rows.find(r=>r.t.id==='fb').bew, stdBR=rows.find(r=>r.t.id==='br').bew;
+  const saldo=istBew-sollBew;
+  const sollDienste=sollVoll/24;
+  const salV=istVoll-sollVoll;
+  const sg=x=>sgn(x)+' h', sc=scl;
+
+  // Monatsleiste
+  $('barMonth').textContent=`${MONATE[m]} ${y}`;
+  const bs=$('barSaldoV'); bs.textContent=nAny?sg(saldo):''; bs.className='v '+(nAny?sc(saldo):'');
+  $('prevM').disabled=(y===2026&&m===0); $('nextM').disabled=(y===2035&&m===11);
+  const c=curYM(), isCur=(c.y===y&&c.m===m);
+  $('todayM').hidden=isCur; $('todayLink').hidden=isCur;
+  if(!isCur) $('todayLink').textContent=`Zum aktuellen Monat (${MONATE[c.m]} ${c.y}) wechseln`;
+
+  // Ergebnis-Kacheln
+  $('resMonth').textContent=`${MONATE[m]} ${y}`;
+  $('hero').className='tile hero '+(nAny?sc(saldo):'');
+  $('heroK').textContent=`Saldo ${MONATE[m]} · bewertet`;
+  $('heroV').textContent=nAny?sg(saldo):'–';
+  $('heroN').textContent=nAny?verdict(saldo,m):`Noch nichts eingetragen. Soll im ${MONATE[m]}: ${fmt(sollDienste)} Dienste à 24 h = ${fmt(sollVoll)} h voll, ${fmt(sollBew)} h bewertet.`;
+  $('tDienste').textContent=nIst; $('tDiensteN').textContent=`Soll ${fmt(sollDienste)}`;
+  $('tIstB').textContent=fmt(istBew)+' h'; $('tIstBN').textContent=`Soll ${fmt(sollBew)} h`;
+
+  // Tabelle
+  $('hVoll').textContent=`Voll (${fmtW(W)} h)`;
+  $('hBew').textContent=`Bewertet (${fmtW(VZ)} h)`;
+  $('sollV').textContent=fmt(sollVoll)+' h';
+  $('sollB').textContent=fmt(sollBew)+' h';
+  $('istV').textContent=fmt(istVoll)+' h';
+  $('istB').textContent=fmt(istBew)+' h';
+  $('salV').textContent=sg(salV); $('salV').className='voll '+sc(salV);
+  $('salB').textContent=sg(saldo); $('salB').className=sc(saldo);
+  $('hdB').textContent=fmt(stdHD)+' h'; $('hdV').textContent='–';
+  $('bewExplain').textContent=`Voll = Stunden wie geleistet (${fmtW(W)}-h-Woche). Bewertet = auf die ${fmtW(VZ)}-h-Woche umgerechnet (× ${fmt(f*100,2)} %): ein 24-h-Dienst zählt ${fmt(24*f)} h. FB und BR zählen 1:1, HD wird gesondert ausgewiesen.`;
+  const lines=[];
+  let l1=`Soll-Basis: ${at} Werktage (Mo–Fr, Feiertage nicht abgezogen) = ${fmt(sollDienste)} Dienste à 24 h`;
+  if(feiertage.length) l1+=` · Feiertage: ${feiertage.join(', ')} (Ausgleich wird extern gutgeschrieben)`;
+  lines.push(l1);
+  if(nAny){
+    const items=rows.filter(r=>r.n>0).map(r=>(r.t.ue||r.t.brm)?`${r.t.ue?'Ü':'BR'} an ${r.n} ${r.n===1?'Tag':'Tagen'} (${hm(Math.round(r.vol*60))})`:r.t.hd?`${r.t.name} an ${r.n} ${r.n===1?'Tag':'Tagen'}`:`${r.n} × ${r.t.name}`);
+    lines.push('Eingetragen: '+items.join(' · '));
+    if(rows.some(r=>['fb','br','kfb','kbr'].includes(r.t.id)&&r.n>0)) lines.push('FB und BR zählen 1:1, ohne Umrechnung – auch als K statt FB/BR.');
+    if(rows.find(r=>r.t.id==='fa').n>0) lines.push(`FA Feiertagsausgleich zählt ${fmtW(T('fa').h)} h je Feiertag und wird wie ein Dienst umgerechnet.`);
+    if(stdHD>0) lines.push(`HD-Zuschlag ${fmt(stdHD)} h wird gesondert ausgewiesen und ist nicht in Ist und Saldo enthalten.`);
+    if(rows.find(r=>r.t.ue).n>0) lines.push(`Ü-Minuten zählen an Diensttagen × ${fmt(f*100,2)} %, an anderen Tagen 1:1.`);
+  }
+  $('resLines').innerHTML=lines.map(s=>`<p class="sub">${esc(s)}</p>`).join('');
+
+  // Aufstellung
+  $('aufTitle').textContent=`Aufstellung ${MONATE[m]} ${y} nach Diensttyp`;
+  const rowHtml=r=>`<tr data-id="${r.t.id}"><td><span class="long">${r.t.name}</span><span class="short" title="${r.t.name}">${r.t.pill}</span></td><td>${r.n}</td><td>${r.t.hd?'–':fmt(r.vol,2)+' h'}</td><td>${r.t.ue?(r.vol?fmt(r.fac*100,2)+' %':'–'):r.t.hd?'gesondert':r.t.f==='w'?fmt(r.fac*100,2)+' %':'100 %'}</td><td>${fmt(r.bew)} h</td></tr>`;
+  const shown=rows.filter(r=>!r.t.hd&&(showAllTypes||r.n>0)), shownHd=rows.filter(r=>r.t.hd&&(showAllTypes||r.n>0));
+  $('tbody').innerHTML=(!shown.length&&!shownHd.length?`<tr><td colspan="5" style="text-align:left;color:var(--muted)">Noch nichts eingetragen.</td></tr>`:
+    (shown.length?shown.map(rowHtml).join('')+`<tr class="sum"><td><strong>Summe</strong> <span class="sub">(${nIst} × 24-h-Dienst)</span></td><td><strong>${nAll}</strong></td><td><strong>${fmt(istVoll,2)} h</strong></td><td></td><td><strong>${fmt(istBew)} h</strong></td></tr>`:'')
+    +(shownHd.length?`<tr class="sect"><td colspan="5">Hintergrunddienst (HD) – gesondert, nicht in Summe und Saldo</td></tr>`+shownHd.map(rowHtml).join('')+`<tr class="sum"><td><strong>HD gesamt</strong></td><td><strong>${nHD}</strong></td><td></td><td></td><td><strong>${fmt(stdHD)} h</strong></td></tr>`:''));
+  $('allTypes').textContent=showAllTypes?'Nur eingetragene anzeigen':'Alle Diensttypen anzeigen';
+
+  // Eingabe-Karte
+  $('entryMonth').textContent=`${MONATE[m]} ${y}`;
+  $('firstHint').hidden=nAny>0;
+  $('firstHint').textContent=`Noch nichts eingetragen für ${MONATE[m]} ${y}. Wähle oben den Diensttyp und tippe dann die Tage an – alles wird automatisch gespeichert.`;
+  $('calNote').textContent=`Grau = Wochenende · Rötlich = Feiertag (zählt zum Soll, Ausgleich wird extern gutgeschrieben) · ${at} Werktage`;
+  const cl=$('clear'); clearTimeout(cl._t); delete cl.dataset.sure; cl.textContent=`${MONATE[m]} leeren`; cl.disabled=!nAny;
+  $('undo').disabled=!undo; $('undo').textContent=undo?`Rückgängig: ${undo.label}`:'Rückgängig';
+  $('undoData').hidden=!(undo&&(undo.label==='Import'||undo.label==='Alles löschen'));
+  renderUe(y,m,f);
+
+  // Jahr und Konto
+  const yr=renderYear(y,m,W,VZ,f);
+  $('tKontoK').textContent=`Konto ${y} bis ${mon(m)}`;
+  const kt=$('tKonto'); kt.textContent=sg(yr.konto); kt.className='v '+sc(yr.konto);
+  const kn=$('tKontoN'); kn.textContent=yr.missing.length?`${monthRanges(yr.missing)} ohne Eingaben – ${yr.missing.length===1?'zählt':'zählen'} mit dem ganzen Soll (bewertet) als Minus`:'Saldo bewertet seit Januar'; kn.classList.toggle('warn',yr.missing.length>0);
+
+  // Einstellungen, Fußzeile
+  $('setSum').textContent=`Einstellungen · ${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · FB ${fmtW(T('fb').h)} h · FA ${fmtW(T('fa').h)} h · HD ${fmtW(T('hd1').h)}/${fmtW(T('hd2').h)}/${fmtW(T('hd3').h)} h`+((wDev||vDev)?' · abweichend vom TV':'');
+  $('setNote').textContent=`FB und BR zählen 1:1, HD wird gesondert ausgewiesen. 24-h-Dienste, U, K statt Dienst und FA werden mit Vollzeit ÷ Höchstarbeitszeit bewertet (aktuell ${fmt(f*100,2)} %). Die Minuten je Antippen für Ü und BR stellst du direkt neben der Diensttyp-Auswahl ein.`;
+  $('foot').textContent=`TV RD BAR § 6 Abs. 4 · Höchstarbeitszeit ${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · Feiertage Brandenburg, Soll ohne Feiertagsabzug · Version ${APP_VERSION}`;
+
+  last={y,m,W,VZ,f,at,feiertage,sollVoll,sollBew,istVoll,istBew,saldo,rows,nIst,nAll,nAny,sollDienste,stdFB,stdBR,stdHD};
+  syncLegend();
+  $('how').textContent=buildText();
+  save();
+}
+function renderUe(y,m,f){
+  const pre=`${y}-${pad(m+1)}-`;
+  const es=[...Object.entries(state.ue).filter(([k])=>k.startsWith(pre)).map(([k,mi])=>['ue',k,mi]),
+            ...Object.entries(state.br).filter(([k])=>k.startsWith(pre)).map(([k,mi])=>['br',k,mi])].sort((a,b)=>a[1].localeCompare(b[1])||a[0].localeCompare(b[0]));
+  const box=$('ueBox');
+  if(!es.length){ box.hidden=true; box.innerHTML=''; return; }
+  const act=document.activeElement, fk=act&&act.tagName==='INPUT'&&act.dataset&&act.dataset.k?[act.dataset.k,act.dataset.s]:null;
+  box.hidden=false;
+  box.innerHTML=`<h3 class="h2">Überstunden und Betriebsrat im ${MONATE[m]} · Minuten je Tag</h3>`+es.map(([st,k,mi])=>{
+    const fa=st==='ue'?dayFactor(k,f):1, d=+k.slice(8), mo=+k.slice(5,7), nm=st==='ue'?'Ü':'BR', full=st==='ue'?'Überstunden':'Betriebsrat';
+    return `<div class="uerow"><span>${nm} ${d}.${mo}.</span><input type="number" inputmode="numeric" enterkeyhint="done" min="1" max="1440" step="1" value="${mi}" data-k="${k}" data-s="${st}" aria-label="${full} in Minuten am ${d}.${mo}."><span>= ${hm(mi)} × ${fmt(fa*100,2)} % = <strong>${fmt(mi/60*fa)} h</strong></span><button type="button" class="act x" data-del="${k}" data-s="${st}" aria-label="${full} am ${d}.${mo}. entfernen" title="Entfernen">×</button></div>`;
+  }).join('')+`<p class="sub" style="margin:8px 0 0">Ü: × ${fmt(f*100,2)} % an Tagen mit 24-h-Dienst, U, K statt Dienst oder FA, sonst × 100 %. BR zählt immer 1:1.</p>`;
+  if(fk){ const el=box.querySelector(`input[data-k="${fk[0]}"][data-s="${fk[1]}"]`); if(el) el.focus({preventScroll:true}); }
+}
+function renderYear(y,curM,W,VZ,f){
+  const sg=sgn, sc=scl;
+  let tAT=0,tSV=0,tIV=0,tSB=0,tIB=0,tHD=0,cum=0,html='',konto=0,missing=[];
+  for(let m=0;m<12;m++){
+    const pre=`${y}-${pad(m+1)}-`, dim=new Date(y,m+1,0).getDate(); let at=0;
+    for(let d=1;d<=dim;d++){ if((new Date(y,m,d).getDay()+6)%7<5) at++; } // alle Werktage, ohne Feiertagsabzug
+    let iv=0, ib=0, nDienst=0, hdm=0;
+    for(const [k,mi] of Object.entries(state.ue)){ if(!k.startsWith(pre)) continue; iv+=mi/60; ib+=mi/60*dayFactor(k,f); }
+    for(const [k,mi] of Object.entries(state.br)){ if(!k.startsWith(pre)) continue; iv+=mi/60; ib+=mi/60; }
+    for(const [k,ids] of Object.entries(state.plan)){
+      if(!k.startsWith(pre)) continue;
+      for(const tid of ids){ const t=TYPES.find(x=>x.id===tid); if(!t) continue; iv+=t.h; ib+=t.h*(t.f==='w'?f:1); if(!t.voll) nDienst++; }
+    }
+    for(const [k,tid] of Object.entries(state.hd)){ if(!k.startsWith(pre)) continue; const t=TYPES.find(x=>x.id===tid); if(t) hdm+=t.h; } // gesondert, nicht im Ist
+    tHD+=hdm;
+    const sv=W/5*at, sb=VZ/5*at, dv=iv-sv, db=ib-sb;
+    cum+=db; tAT+=at; tSV+=sv; tIV+=iv; tSB+=sb; tIB+=ib;
+    const has=[state.plan,state.hd,state.ue,state.br].some(o=>Object.keys(o).some(k=>k.startsWith(pre)));
+    if(m===curM) konto=cum;
+    if(m<=curM&&!has) missing.push(m);
+    const c=x=>has?sc(x):'';
+    html+=`<tr class="${m===curM?'cur':''}${has?'':' empty'}" data-m="${m}"><td><button type="button" class="mbtn" data-m="${m}" title="${MONATE[m]} anzeigen">${MONATE[m].slice(0,3)}${has?' •':''}</button></td><td class="c-dienste">${nDienst}</td><td class="c-at">${at}</td><td class="c-sb">${fmt(sb)}</td><td class="c-ib">${fmt(ib)}</td><td class="c-db ${c(db)}">${sg(db)}</td><td class="c-konto ${c(cum)}">${sg(cum)}</td><td class="c-hd">${hdm?fmt(hdm):'–'}</td><td class="c-sv">${fmt(sv)}</td><td class="c-iv">${fmt(iv)}</td><td class="c-dv ${c(dv)}">${sg(dv)}</td></tr>`;
+  }
+  const dV=tIV-tSV, dB=tIB-tSB;
+  html+=`<tr class="sum"><td>Jahr</td><td class="c-dienste"></td><td class="c-at">${tAT}</td><td class="c-sb">${fmt(tSB)}</td><td class="c-ib">${fmt(tIB)}</td><td class="c-db ${sc(dB)}">${sg(dB)}</td><td class="c-konto"></td><td class="c-hd">${tHD?fmt(tHD):'–'}</td><td class="c-sv">${fmt(tSV)}</td><td class="c-iv">${fmt(tIV)}</td><td class="c-dv ${sc(dV)}">${sg(dV)}</td></tr>`;
+  $('ybody').innerHTML=html;
+  $('yTitle').innerHTML=`Jahresübersicht ${y} · Konto bis ${mon(curM)}: <span class="${sc(konto)}">${sg(konto)} h</span>`;
+  $('yN').textContent=`Konto = Saldo bewertet, aufgelaufen seit Januar · bew. = bewertet (${fmtW(VZ)}-h-Woche) · voll = ${fmtW(W)}-h-Woche · AT = Werktage (Mo–Fr, Feiertage nicht abgezogen) · HD ges. = Hintergrunddienst, gesondert, nicht im Saldo · • = Monat mit Eingaben. Monate ohne Eingaben zählen mit ihrem ganzen Soll als Minus. Monatsname antippen zeigt den Monat.`;
+  return {konto,missing};
+}
+function buildText(){
+  if(!last) return '';
+  const L=last, m=L.m, pre=`${L.y}-${pad(m+1)}-`, fp=fmt(L.f*100,2)+' %';
+  const days=ks=>ks.map(k=>+k.slice(8)).sort((a,b)=>a-b).map(d=>d+'.').join(', ');
+  const lines=[];
+  lines.push(`Stundenbewertung ${MONATE[m]} ${L.y} · TV RD BAR § 6 Abs. 4 · Stand ${new Date().toLocaleDateString('de-DE')}`);
+  lines.push(`Höchstarbeitszeit ${fmtW(L.W)} h/Woche · Vollzeit ${fmtW(L.VZ)} h/Woche`);
+  lines.push(`Umrechnung auf ${fmtW(L.VZ)} h: ${fmtW(L.VZ)} ÷ ${fmtW(L.W)} = ${fp} → 1 Dienst (24 h) = ${fmt(24*L.f)} h bewertet`);
+  lines.push('');
+  lines.push('Soll');
+  lines.push(`Werktage (Mo–Fr, Feiertage nicht abgezogen): ${L.at}`);
+  if(L.feiertage.length) lines.push(`  davon Feiertage: ${L.feiertage.join(', ')} (Ausgleich wird extern gutgeschrieben)`);
+  lines.push(`Soll voll:     ${fmtW(L.W)} ÷ 5 × ${L.at} = ${fmt(L.sollVoll)} h  (= ${fmt(L.sollDienste)} Dienste à 24 h)`);
+  lines.push(`Soll bewertet: ${fmtW(L.VZ)} ÷ 5 × ${L.at} = ${fmt(L.sollBew)} h`);
+  lines.push('');
+  const used=L.rows.filter(r=>r.n>0);
+  if(!used.length) lines.push('Eingetragen: nichts');
+  else{
+    lines.push('Eingetragen');
+    for(const r of used){
+      const t=r.t;
+      if(t.ue){
+        const es=Object.entries(state.ue).filter(([k])=>k.startsWith(pre)).sort();
+        const parts=es.map(([k,mi])=>`${+k.slice(8)}.: ${mi} Min${dayFactor(k,L.f)!==1?` (Diensttag × ${fp})`:' (1:1)'}`);
+        const tot=es.reduce((a,[,mi])=>a+mi,0);
+        lines.push(`${t.name}: ${parts.join(', ')} → ${hm(tot)} = ${fmt(r.vol)} h → ${fmt(r.bew)} h bewertet`);
+      } else if(t.brm){
+        const es=Object.entries(state.br).filter(([k])=>k.startsWith(pre)).sort();
+        const tot=es.reduce((a,[,mi])=>a+mi,0);
+        lines.push(`${t.name}: ${es.map(([k,mi])=>`${+k.slice(8)}.: ${mi} Min`).join(', ')} → ${hm(tot)} = ${fmt(r.vol)} h, zählt 1:1`);
+      } else if(t.hd){
+        const ks=Object.entries(state.hd).filter(([k,v])=>v===t.id&&k.startsWith(pre)).map(([k])=>k);
+        lines.push(`Hintergrunddienst ${t.name}: ${days(ks)} → ${r.n} × ${fmtW(t.h)} h = ${fmt(r.bew)} h, gesondert (nicht in Ist und Saldo)`);
+      } else {
+        const ks=Object.entries(state.plan).filter(([k,v])=>v.includes(t.id)&&k.startsWith(pre)).map(([k])=>k);
+        lines.push(`${t.name}: ${days(ks)} → ${r.n} × ${fmtW(t.h)} h = ${fmt(r.vol)} h → ${t.f==='w'?`× ${fp} = ${fmt(r.bew)} h`:`zählt 1:1 = ${fmt(r.bew)} h`}`);
+      }
+    }
+  }
+  lines.push('');
+  lines.push('Ergebnis');
+  const main=used.filter(r=>!r.t.hd), volParts=main.map(r=>fmt(r.vol)), bewParts=main.map(r=>fmt(r.bew));
+  lines.push(`Ist voll:       ${volParts.length>1?volParts.join(' + ')+' = ':''}${fmt(L.istVoll,2)} h (davon ${L.nIst} × 24-h-Dienst = ${fmt(L.nIst*24)} h)`);
+  lines.push(`Ist bewertet:   ${bewParts.length>1?bewParts.join(' + ')+' = ':''}${fmt(L.istBew)} h`);
+  if(L.stdHD) lines.push(`HD gesondert (nicht in Ist und Saldo): ${fmt(L.stdHD)} h`);
+  lines.push(`Saldo voll:     ${sgn(L.istVoll-L.sollVoll)} h`);
+  lines.push(`Saldo bewertet: ${sgn(L.saldo)} h`);
+  lines.push(`→ ${L.nAny?verdict(L.saldo,m):'Noch nichts eingetragen.'}`);
+  return lines.join('\n');
+}
+init();
+initCloud();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+</script>
+</body>
+</html>
