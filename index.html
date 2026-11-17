@@ -742,7 +742,7 @@ table.yr tr.sum td{font-weight:700;border-top:2px solid var(--line);border-botto
 </main>
 
 <script>
-const APP_VERSION='2.5 · Stand 17.11.2026';
+const APP_VERSION='2.6 · Stand 17.11.2026';
 const MONATE=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 // Diensttypen: id/h/f/cls/voll/ue/hd/brm sind Rechen- und Speicherfelder und bleiben unverändert. name/label/pill/short/mini sind nur Text.
 const TYPES=[
@@ -829,6 +829,7 @@ function init(){
   syncW();
   load();
   guardYM();
+  keepMonth(c.y,c.m); // Start immer im aktuellen Monat
   lastJson=dataJson(); lastDataBody=dataBody();
   wireStorage();
   buildLegend();
@@ -856,6 +857,11 @@ function guardYM(){ // nach Laden/Import: ungültige Werte auf den aktuellen Mon
   const c=curYM();
   if(!$('year').value) $('year').value=String(c.y);
   if(!$('month').value) $('month').value=String(c.m);
+}
+function keepMonth(y,m){ // Anzeige auf den Monat y/m stellen (ohne zu rechnen); wechselt dabei das Jahr, folgt die Höchstarbeitszeit wie bei jedem Jahreswechsel dem TV-Wert
+  const yc=$('year').value!==String(y);
+  $('year').value=String(y); $('month').value=String(m);
+  if(yc) syncW();
 }
 
 /* Monatsleiste */
@@ -1137,7 +1143,7 @@ async function initCloud(){
       if(typeof d.json==='string'&&d.json){
         cloud.lastSent=d.json;
         if(String(d.saved||'')>localSaved){
-          try{ applyData(JSON.parse(d.json)); localSaved=d.saved; guardYM(); lastDataBody=dataBody(); render(); cloudMsg('Cloud-Speicher: aktiv. Stand aus der Cloud geladen.'); return; }catch(e){}
+          try{ const ky=$('year').value, km=$('month').value; applyData(JSON.parse(d.json)); localSaved=d.saved; guardYM(); keepMonth(ky,km); /* der gezeigte Monat bleibt, auch wenn der Stand aus der Cloud zuletzt einen anderen zeigte */ lastDataBody=dataBody(); render(); cloudMsg('Cloud-Speicher: aktiv. Stand aus der Cloud geladen.'); return; }catch(e){}
         }
       }
     }
@@ -1292,8 +1298,8 @@ function render(){
   // Jahr und Konto
   const yr=renderYear(y,m,W,VZ,f);
   $('tKontoK').textContent=`Konto ${y} bis ${mon(m)}`;
-  const kt=$('tKonto'); kt.textContent=sg(yr.konto); kt.className='v '+sc(yr.konto)+(yr.missing.length?' offen':'');
-  const kn=$('tKontoN'); kn.textContent=yr.missing.length?`${monthRanges(yr.missing)} ohne Eingaben. ${yr.missing.length===1?'Der Monat zählt mit seinem':'Sie zählen mit ihrem'} ganzen Soll als Minus.`:'Saldo bewertet seit Januar'; kn.classList.toggle('warn',yr.missing.length>0);
+  const kt=$('tKonto'); kt.textContent=yr.started?sg(yr.konto):'–'; kt.className='v '+(yr.started?sc(yr.konto)+(yr.missing.length?' offen':''):'offen');
+  const kn=$('tKontoN'); kn.textContent=!yr.started?(yr.first<0?'Zählt ab dem ersten Monat mit Eingaben.':`Zählt ab ${MONATE[yr.first]}, dem ersten Monat mit Eingaben.`):yr.missing.length?`${monthRanges(yr.missing)} ohne Eingaben. ${yr.missing.length===1?'Der Monat zählt mit seinem':'Sie zählen mit ihrem'} ganzen Soll als Minus.`:`Saldo bewertet seit ${MONATE[yr.first]}`; kn.classList.toggle('warn',yr.started&&yr.missing.length>0);
 
   // Einstellungen, Fußzeile
   $('setSum').textContent=`${fmtW(W)} h/Woche · Vollzeit ${fmtW(VZ)} h · FB ${fmtW(T('fb').h)} h · FA ${fmtW(T('fa').h)} h · HD ${fmtW(T('hd1').h)}/${fmtW(T('hd2').h)}/${fmtW(T('hd3').h)} h`+((wDev||vDev)?' · abweichend vom TV':'');
@@ -1322,6 +1328,7 @@ function renderUe(y,m,f){
 function renderYear(y,curM,W,VZ,f){
   const sg=sgn, sc=scl;
   let tAT=0,tSV=0,tIV=0,tSB=0,tIB=0,tHD=0,cum=0,html='',konto=0,missing=[];
+  let first=-1, started=false, jAT=0, jSV=0, jSB=0; // first: erster Monat mit Eingaben · started: der gezeigte Monat liegt nicht davor · j…: ganzes Jahr, für ein Jahr ganz ohne Eingaben
   for(let m=0;m<12;m++){
     const pre=`${y}-${pad(m+1)}-`, dim=new Date(y,m+1,0).getDate(); let at=0;
     for(let d=1;d<=dim;d++){ if((new Date(y,m,d).getDay()+6)%7<5) at++; } // alle Werktage, ohne Feiertagsabzug
@@ -1335,19 +1342,23 @@ function renderYear(y,curM,W,VZ,f){
     for(const [k,tid] of Object.entries(state.hd)){ if(!k.startsWith(pre)) continue; const t=TYPES.find(x=>x.id===tid); if(t) hdm+=t.h; } // gesondert, nicht im Ist
     tHD+=hdm;
     const sv=W/5*at, sb=VZ/5*at, dv=iv-sv, db=ib-sb;
-    cum+=db; tAT+=at; tSV+=sv; tIV+=iv; tSB+=sb; tIB+=ib;
     const has=[state.plan,state.hd,state.ue,state.br].some(o=>Object.keys(o).some(k=>k.startsWith(pre)));
-    if(m===curM) konto=cum;
-    if(m<=curM&&!has) missing.push(m);
+    if(has&&first<0) first=m;
+    const on=first>=0; // ab dem ersten Monat mit Eingaben zählt jeder Monat mit
+    jAT+=at; jSV+=sv; jSB+=sb;
+    if(on){ cum+=db; tAT+=at; tSV+=sv; tIV+=iv; tSB+=sb; tIB+=ib; }
+    if(m===curM){ konto=cum; started=on; }
+    if(on&&m<=curM&&!has) missing.push(m);
     const c=x=>has?sc(x):'';
-    html+=`<tr class="${m===curM?'cur':''}${has?'':' empty'}" data-m="${m}"><td><button type="button" class="mbtn" data-m="${m}" title="${MONATE[m]} anzeigen">${MONATE[m].slice(0,3)}${has?' •':''}</button></td><td class="c-dienste">${nDienst}</td><td class="c-at">${at}</td><td class="c-sb">${fmt(sb)}</td><td class="c-ib">${fmt(ib)}</td><td class="c-db ${c(db)}">${sg(db)}</td><td class="c-konto ${c(cum)}">${sg(cum)}</td><td class="c-hd">${hdm?fmt(hdm):'–'}</td><td class="c-sv">${fmt(sv)}</td><td class="c-iv">${fmt(iv)}</td><td class="c-dv ${c(dv)}">${sg(dv)}</td></tr>`;
+    html+=`<tr class="${m===curM?'cur':''}${has?'':' empty'}" data-m="${m}"><td><button type="button" class="mbtn" data-m="${m}" title="${MONATE[m]} anzeigen">${MONATE[m].slice(0,3)}${has?' •':''}</button></td><td class="c-dienste">${nDienst}</td><td class="c-at">${at}</td><td class="c-sb">${fmt(sb)}</td><td class="c-ib">${fmt(ib)}</td><td class="c-db ${c(db)}">${sg(db)}</td><td class="c-konto ${on?c(cum):''}">${on?sg(cum):'–'}</td><td class="c-hd">${hdm?fmt(hdm):'–'}</td><td class="c-sv">${fmt(sv)}</td><td class="c-iv">${fmt(iv)}</td><td class="c-dv ${c(dv)}">${sg(dv)}</td></tr>`;
   }
-  const dV=tIV-tSV, dB=tIB-tSB;
-  html+=`<tr class="sum"><td>Jahr</td><td class="c-dienste"></td><td class="c-at">${tAT}</td><td class="c-sb">${fmt(tSB)}</td><td class="c-ib">${fmt(tIB)}</td><td class="c-db ${sc(dB)}">${sg(dB)}</td><td class="c-konto"></td><td class="c-hd">${tHD?fmt(tHD):'–'}</td><td class="c-sv">${fmt(tSV)}</td><td class="c-iv">${fmt(tIV)}</td><td class="c-dv ${sc(dV)}">${sg(dV)}</td></tr>`;
+  const dV=tIV-tSV, dB=tIB-tSB, any=first>=0;
+  const sumName=first>0?(first<11?MONATE[first].slice(0,3)+'–Dez':'Dez'):'Jahr'; // Zeitraum der Summe: ab dem ersten Monat mit Eingaben
+  html+=`<tr class="sum"><td>${sumName}</td><td class="c-dienste"></td><td class="c-at">${any?tAT:jAT}</td><td class="c-sb">${fmt(any?tSB:jSB)}</td><td class="c-ib">${fmt(tIB)}</td><td class="c-db ${any?sc(dB):''}">${any?sg(dB):'–'}</td><td class="c-konto"></td><td class="c-hd">${tHD?fmt(tHD):'–'}</td><td class="c-sv">${fmt(any?tSV:jSV)}</td><td class="c-iv">${fmt(tIV)}</td><td class="c-dv ${any?sc(dV):''}">${any?sg(dV):'–'}</td></tr>`;
   $('ybody').innerHTML=html;
-  $('yHead').textContent=`Jahresübersicht ${y}`; $('yTitle').innerHTML=`Konto bis ${mon(curM)}: <span class="${sc(konto)}${missing.length?' offen':''}">${sg(konto)} h</span>`;
-  $('yN').innerHTML=`<span class="yn">Konto: Saldo bewertet, aufgelaufen seit Januar. Monate ohne Eingaben zählen mit ihrem ganzen Soll als Minus. Der Punkt • markiert Monate mit Eingaben. Monat antippen öffnet ihn.</span><span class="yn abbr">bew. = bewertet (${fmtW(VZ)}-h-Woche), voll = ${fmtW(W)}-h-Woche, AT = Werktage Mo bis Fr (Feiertage nicht abgezogen), HD ges. = Hintergrunddienst, gesondert und nicht im Saldo.</span>`;
-  return {konto,missing};
+  $('yHead').textContent=`Jahresübersicht ${y}`; $('yTitle').innerHTML=`Konto bis ${mon(curM)}: <span class="${started?sc(konto)+(missing.length?' offen':''):'offen'}">${started?sg(konto)+' h':'–'}</span>`;
+  $('yN').innerHTML=`<span class="yn">Konto: Saldo bewertet, aufgelaufen ab dem ersten Monat mit Eingaben. Fehlt danach ein Monat, zählt er mit seinem ganzen Soll als Minus. Der Punkt • markiert Monate mit Eingaben. Monat antippen öffnet ihn.</span><span class="yn abbr">bew. = bewertet (${fmtW(VZ)}-h-Woche), voll = ${fmtW(W)}-h-Woche, AT = Werktage Mo bis Fr (Feiertage nicht abgezogen), HD ges. = Hintergrunddienst, gesondert und nicht im Saldo.</span>`;
+  return {konto,missing,first,started};
 }
 function buildText(){
   if(!last) return '';
